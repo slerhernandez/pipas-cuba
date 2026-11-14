@@ -218,6 +218,7 @@ function pendientes(){
   S.movs.forEach(m=>{if(m.estado==='pendiente'||m.estado==='por_confirmar'||m.correccionEstado==='pendiente')a.push(m)});
   return{movs:a,reps:S.reps.filter(r=>r.estado==='solicitada')};
 }
+function facturaPend(){return S.movs.filter(m=>m.tipo==='diesel'&&vigente(m)&&!m.facturado)}
 function nPend(){const p=pendientes();return p.movs.length+p.reps.length}
 function alertas(){
   const out=[];const t=today();const umbral=+cfg('umbralDedos')||0.5;
@@ -229,6 +230,8 @@ function alertas(){
   const lim=new Date();lim.setHours(hh,mm+15,0,0);
   if(now>lim&&now.getDay()!==0&&!S.jornadas.find(j=>j.id===t))out.push({lvl:'warn',t:`⏰ El chofer aún no inicia jornada hoy (hora de entrada ${h}).`});
   S.reps.filter(r=>r.tipo==='rutinaria'&&r.estado==='programada'&&r.fechaProg&&r.fechaProg<t).forEach(r=>out.push({lvl:'warn',t:`🔧 Mantenimiento vencido: ${r.desc} (era el ${dLabel(r.fechaProg)}).`}));
+  const fp=facturaPend();if(fp.length){const mes=today().slice(0,7);const viejos=fp.filter(m=>(m.fecha||'').slice(0,7)<mes).length;
+    out.push({lvl:viejos?'bad':'warn',t:`🧾 Tienes ${fp.length} ticket(s) de diésel por facturar (${money(fp.reduce((a,m)=>a+(+m.monto||0),0))})${viejos?` — ${viejos} son del mes pasado, ¡factúralos ya!`:'.'} Toca aquí para verlos.`,act:'facturas'})}
   const n=nPend();if(n)out.push({lvl:'warn',t:`✅ Tienes ${n} pendiente(s) por autorizar o confirmar.`,act:'autorizar'});
   return out;
 }
@@ -301,7 +304,7 @@ function fVenta(pre={}){
 function fDiesel(){
   sheet('⛽ Cargar diésel',`<div class="grid2"><div>${fNum('monto','Monto ($)','required')}</div><div>${fNum('litros','Litros','required')}</div></div>
     <div class="grid2"><div>${fNum('dedosAntes','Dedos antes de cargar','step="0.5" required')}</div><div>${fNum('dedosDespues','Dedos después','step="0.5" required')}</div></div>
-    <div class="hint">Mide con la varilla antes y después de cargar.</div>${fFoto('Foto del ticket',false)}${fFecha()}`,
+    <div class="hint">Mide con la varilla antes y después de cargar.</div>${fFoto('Foto del ticket (para facturar)',true)}${fFecha()}`,
   async d=>{const foto=await subirFoto(d.foto);
     return addMov({tipo:'diesel',monto:+d.monto,litros:+d.litros,dedosAntes:+d.dedosAntes,dedosDespues:+d.dedosDespues,foto,fecha:d.fecha||today()}).then(ok=>{if(ok)toast('Diésel registrado');return ok})});
 }
@@ -509,7 +512,8 @@ function vInicioAdmin(){
     <button class="tile" data-act="nPrestamo"><span class="e">🤝</span>Préstamo</button>
     <button class="tile" data-act="nExtra"><span class="e">⏱️</span>Horas extra</button>
     <button class="tile" data-act="nGasto"><span class="e">🧾</span>Gasto</button>
-    <button class="tile" data-act="nVenta"><span class="e">💧</span>Venta</button></div>`;
+    <button class="tile" data-act="nVenta"><span class="e">💧</span>Venta</button>
+    <button class="tile" data-act="tab" data-id="facturas"><span class="e">🧾</span>Facturas diésel${facturaPend().length?` (${facturaPend().length})`:''}</button></div>`;
   const rec=S.movs.slice().sort(sortTs).slice(0,15);
   h+=`<h2>Movimientos recientes</h2><div class="card">${rec.length?rec.map(movRow).join(''):'<div class="empty">Todavía no hay movimientos. Empieza asignando un pedido o cambia a "Ver como chofer" para probar.</div>'}</div>`;
   return h;
@@ -630,6 +634,15 @@ function vTaller(){
   if(hist.length)h+=`<h2>Historial</h2>`+hist.map(repRow).join('');
   return h;
 }
+function vFacturas(){
+  const fp=facturaPend().sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));const mes=today().slice(0,7);
+  let h=`<div class="card"><div class="mut small">Tickets de diésel por facturar</div><div class="big">${money(fp.reduce((a,m)=>a+(+m.monto||0),0))}</div><div class="small mut">${fp.length} ticket(s). Factúralos antes de que termine el mes.</div></div>`;
+  h+=fp.length?fp.map(m=>`<div class="card"><div class="row" style="padding-top:0"><div><b>⛽ ${dLabel(m.fecha)}</b><div class="small mut">${num(m.litros)} L · ${money(m.monto)}</div></div>${(m.fecha||'').slice(0,7)<mes?'<span class="pill bad">Mes pasado</span>':'<span class="pill warn">Por facturar</span>'}</div>
+    ${m.foto?fotoImg(m.foto):'<div class="hint">Sin foto del ticket</div>'}<div class="btns"><button class="btn ok" data-act="facturar" data-id="${esc(m.id)}">✅ Ya lo facturé</button></div></div>`).join(''):'<div class="card empty">✅ No tienes tickets pendientes de facturar.</div>';
+  const hechos=S.movs.filter(m=>m.tipo==='diesel'&&m.facturado).sort((a,b)=>(b.facturadoFecha||'').localeCompare(a.facturadoFecha||'')).slice(0,10);
+  if(hechos.length)h+=`<h2>Facturados recientemente</h2><div class="card">${hechos.map(m=>`<div class="row"><div><b>${dLabel(m.fecha)} · ${money(m.monto)}</b><div class="small mut">Facturado el ${dLabel(m.facturadoFecha||m.fecha)}</div></div><button class="btn sm sec" data-act="desfacturar" data-id="${esc(m.id)}">Deshacer</button></div>`).join('')}</div>`;
+  return h;
+}
 function vAjustes(){
   const L=lpd();
   let h=`<div class="card"><h3>Configuración</h3>
@@ -669,11 +682,11 @@ function draw(){
   if(!S.isOwner)chips.push('<button class="chip" data-act="logout">Salir</button>');
   $('#hbtns').innerHTML=S.loaded?chips.join(''):'';
   const tabs=adm?TABS_ADMIN:TABS_CHOFER;
-  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes'].includes(S.tab))||(S.tab==='ajustes'&&!adm))S.tab=tabs[0][0];
+  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes','facturas'].includes(S.tab))||((S.tab==='ajustes'||S.tab==='facturas')&&!adm))S.tab=tabs[0][0];
   if(!S.loaded){$('#main').innerHTML=`<div class="load">${S.slow?'La conexión está lenta. Seguimos intentando…':'Cargando datos…'}</div>`;$('#nav').innerHTML='';return}
   const np=adm?nPend():0;const npe=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino').length;
   $('#nav').innerHTML=tabs.map(([k,i,n])=>{const bd=k==='autorizar'&&np?np:k==='pedidos'&&!adm&&npe?npe:0;return `<button class="${S.tab===k?'on':''}" data-act="tab" data-id="${k}"><span class="ic">${i}</span>${n}${bd?`<span class="badge">${bd}</span>`:''}</button>`}).join('');
-  const V={hoy:vHoyChofer,inicio:vInicioAdmin,pedidos:vPedidos,autorizar:vAutorizar,semana:vSemana,taller:vTaller,ajustes:vAjustes};
+  const V={facturas:vFacturas,hoy:vHoyChofer,inicio:vInicioAdmin,pedidos:vPedidos,autorizar:vAutorizar,semana:vSemana,taller:vTaller,ajustes:vAjustes};
   let html='';try{html=(V[S.tab]||V.inicio)()}catch(e){console.error(e);html='<div class="card">Ocurrió un error al mostrar esta sección.</div>'}
   if(S.err)html=`<div class="banner warn small">Problema de conexión: algunos datos pueden no estar actualizados.</div>`+html;
   $('#main').innerHTML=html;
@@ -683,6 +696,8 @@ function draw(){
 const findMov=id=>S.movs.find(m=>m.id===id);
 const ACT={
   closeSheet,
+  facturar:async d=>{if(await updMov(d.id,{facturado:true,facturadoFecha:today()})){toast('Marcado como facturado');if($('#sheet').classList.contains('on'))closeSheet()}},
+  desfacturar:d=>updMov(d.id,{facturado:false}).then(o=>o&&toast('Regresó a pendientes')),
   install:()=>{const e=S.installEvt;if(!e)return;S.installEvt=null;e.prompt();render()},
   logout:async()=>{try{await sb.auth.signOut()}catch(e){}location.reload()},
   addUser:()=>sheet('👤 Dar acceso',`${fIn('email','Correo (el mismo que creaste en Supabase)','type="email" required')}${fIn('nombre','Nombre')}${fSeg('role','Rol',[['chofer','Chofer'],['admin','Administrador']],'chofer')}`,
@@ -731,6 +746,7 @@ const ACT={
     let b='';
     if(m.tipo==='venta'&&m.pago==='pendiente'&&vigente(m))b+=`<button type="button" class="btn ok" data-act="cobrar" data-id="${esc(m.id)}">💵 Marcar cobrado</button>`;
     if(!isAdmin()&&vigente(m)&&m.correccionEstado!=='pendiente')b+=`<button type="button" class="btn sec" data-act="pedirCorr" data-id="${esc(m.id)}">✏️ Pedir corrección</button>`;
+    if(isAdmin()&&m.tipo==='diesel'&&vigente(m))b+=m.facturado?`<span class="pill ok">Facturado ${dLabel(m.facturadoFecha||m.fecha)}</span>`:`<button type="button" class="btn ok" data-act="facturar" data-id="${esc(m.id)}">🧾 Ya lo facturé</button>`;
     if(isAdmin()&&m.estado!=='anulado')b+=`<button type="button" class="btn bad" data-act="anular" data-id="${esc(m.id)}">Anular</button>`;
     sheet(`${t.e} ${esc(movTitle(m))}`,`<div>${estadoPill(m)}</div>${rows.map(([k,v])=>`<div class="kv"><span class="mut">${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}
       ${m.correccion?`<div class="banner warn small" style="margin-top:10px">✏️ ${esc(m.correccion)}</div>`:''}${fotoImg(m.foto)}<div class="btns">${b}</div>`,null)}
