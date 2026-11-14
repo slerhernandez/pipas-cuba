@@ -215,7 +215,7 @@ function cargaNoCuadra(m){
 }
 function pendientes(){
   const a=[];
-  S.movs.forEach(m=>{if(m.estado==='pendiente'||m.estado==='por_confirmar'||m.correccionEstado==='pendiente')a.push(m)});
+  S.movs.forEach(m=>{if(m.estado==='pendiente'||m.estado==='por_confirmar'||m.correccionEstado==='pendiente'||(vigente(m)&&(m.precioEstado==='por_revisar'||m.creditoEstado==='por_autorizar')))a.push(m)});
   return{movs:a,reps:S.reps.filter(r=>r.estado==='solicitada')};
 }
 function facturaPend(){return S.movs.filter(m=>m.tipo==='diesel'&&vigente(m)&&!m.facturado)}
@@ -288,18 +288,24 @@ function lugarMount(f){const i=f.querySelector('[name=lugar]'),u=f.querySelector
 
 /* ---------- formularios ---------- */
 function fVenta(pre={}){
+  const fijo=!!(pre.pedidoId&&+pre.monto>0);const lock=fijo&&!isAdmin();
   sheet('💧 Registrar venta',`${dlLugares()}
-    ${fIn('lugar','Lugar',`list="dlL" required placeholder="Ej. Hospital Premium Hill" value="${esc(pre.lugar||'')}"`)}
-    <div class="grid2"><div>${fNum('litros','Litros que dejó',`placeholder="20000" value="${esc(pre.litros||'')}"`)}</div><div>${fNum('monto','Cobro ($)',`required placeholder="1000" value="${esc(pre.monto||'')}"`)}</div></div>
+    ${fIn('lugar','Lugar',`list="dlL" required placeholder="Ej. Hospital Premium Hill" value="${esc(pre.lugar||'')}" ${lock?'readonly':''}`)}
+    <div class="grid2"><div>${fNum('litros','Litros que dejó',`placeholder="20000" value="${esc(pre.litros||'')}"`)}</div><div>${fNum('monto','Cobro ($)',`required placeholder="1000" value="${esc(pre.monto||'')}" ${lock?'readonly style="background:#eef3f7"':''}`)}</div></div>
+    ${lock?'<div class="hint">🔒 Precio fijado por el administrador.</div>':isAdmin()?'':'<div class="hint">El administrador revisará el precio de esta venta.</div>'}
     ${fSeg('pago','¿Cómo pagó?',[['efectivo','Efectivo'],['transferencia','Transferencia'],['pendiente','Me quedó a deber']],'efectivo')}
+    ${isAdmin()?'':'<div class="hint">Si te quedan a deber, el administrador decide si acepta el crédito.</div>'}
     ${fIn('ubic','Ubicación (opcional)',`placeholder="Enlace de Maps o coordenadas" value="${esc(pre.ubic||'')}"`,'Si es un lugar nuevo, pega el enlace que te mandaron por WhatsApp.')}
     ${fFecha()}${fArea('nota','Nota (opcional)')}`,
   async d=>{if(!(+d.monto>0)){toast('Escribe el cobro');return false}
-    const lugar=d.lugar.trim();
-    const ok=await addMov({tipo:'venta',lugar,litros:+d.litros||0,monto:+d.monto,pago:d.pago,nota:d.nota||'',fecha:d.fecha||today(),pedidoId:pre.pedidoId||null});
+    const lugar=lock?pre.lugar:d.lugar.trim();const monto=lock?+pre.monto:+d.monto;const adm=isAdmin();
+    const extra={};
+    if(!fijo&&!adm)extra.precioEstado='por_revisar';
+    if(d.pago==='pendiente')extra.creditoEstado=adm?'aceptado':'por_autorizar';
+    const ok=await addMov(Object.assign({tipo:'venta',lugar,litros:+d.litros||0,monto,pago:d.pago,nota:d.nota||'',fecha:d.fecha||today(),pedidoId:pre.pedidoId||null},extra));
     if(!ok)return false;await upsertLugar(lugar,(d.ubic||'').trim());
     if(pre.pedidoId)await save(col('pedidos').doc(pre.pedidoId).update({estado:'entregado',entregadoTs:Date.now()}));
-    toast('Venta registrada');},{mount:lugarMount});
+    toast(extra.creditoEstado==='por_autorizar'?'Venta registrada. El crédito queda por autorizar.':'Venta registrada');},{mount:lugarMount});
 }
 function fDiesel(){
   sheet('⛽ Cargar diésel',`<div class="grid2"><div>${fNum('monto','Monto ($)','required')}</div><div>${fNum('litros','Litros','required')}</div></div>
@@ -432,7 +438,9 @@ function estadoPill(m){
   if(m.estado==='por_confirmar')p+=' <span class="pill warn">Por confirmar</span>';
   if(m.estado==='rechazado')p+=' <span class="pill bad">Rechazado</span>';
   if(m.estado==='anulado')p+=' <span class="pill bad">Anulado</span>';
-  if(m.tipo==='venta'&&m.pago==='pendiente')p+=' <span class="pill warn">Por cobrar</span>';
+  if(m.tipo==='venta'&&m.pago==='pendiente')p+=m.creditoEstado==='por_autorizar'?' <span class="pill warn">Crédito por autorizar</span>':m.creditoEstado==='rechazado'?' <span class="pill bad">Crédito NO autorizado</span>':' <span class="pill warn">Por cobrar</span>';
+  if(m.precioEstado==='por_revisar')p+=' <span class="pill">Precio por revisar</span>';
+  if(m.precioEstado==='corregido')p+=' <span class="pill">Precio corregido</span>';
   if(m.correccionEstado==='pendiente')p+=' <span class="pill">Corrección pedida</span>';
   return p;
 }
@@ -467,6 +475,8 @@ function vHoyChofer(){
   const [hh,mm]=cfg('horaInicio').split(':').map(Number);const now=new Date();const hIni=new Date();hIni.setHours(hh,mm,0,0);
   let h='';
   if(!j&&now>=hIni&&now.getDay()!==0)h+=`<div class="banner">⏰ Ya son las ${esc(cfg('horaInicio'))}. ¡Inicia tu jornada!</div>`;
+  S.movs.filter(m=>m.tipo==='venta'&&vigente(m)&&m.pago==='pendiente'&&m.creditoEstado==='rechazado').forEach(m=>{
+    h+=`<div class="banner">🚫 El administrador NO aceptó el crédito: cobra <b>${money(m.monto)}</b> en ${esc(m.lugar)} (${dLabel(m.fecha)}).<div class="btns"><button class="btn sm sec" data-act="cobrar" data-id="${esc(m.id)}">Ya lo cobré</button></div></div>`});
   h+=`<div class="card">`;
   if(!j)h+=`<h3>Jornada de hoy</h3><div class="mut small" style="margin-bottom:10px">${dLabel(t)} · Entrada ${esc(cfg('horaInicio'))}</div><button class="btn block huge" data-act="jIni">☀️ Iniciar jornada</button><div class="hint center">Anota los dedos de diésel y toma foto de la varilla.</div>`;
   else if(!j.cierre)h+=`<div class="row"><div><h3>Jornada iniciada</h3><div class="small mut">A las ${hhmm(j.inicio)} · Amaneció con ${num(j.dedosInicio)} dedos</div></div><span class="pill ok">Trabajando</span></div><button class="btn sec block" style="margin-top:8px" data-act="jFin">🌙 Cerrar jornada</button>`;
@@ -486,6 +496,8 @@ function vHoyChofer(){
     <button class="tile" data-act="tab" data-id="pedidos"><span class="e">📋</span>Pedidos</button></div>`;
   const peds=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino');
   if(peds.length)h+=`<h2>Pedidos pendientes (${peds.length})</h2>`+peds.sort(pedSort).slice(0,2).map(pedCard).join('');
+  const pc=S.movs.filter(m=>m.tipo==='venta'&&vigente(m)&&m.pago==='pendiente'&&m.creditoEstado!=='rechazado');
+  if(pc.length)h+=`<h2>Clientes que deben (${pc.length})</h2><div class="card">${pc.map(movRow).join('')}<div class="hint">Toca una venta para marcarla como cobrada.</div></div>`;
   const hoy=S.movs.filter(m=>m.fecha===t).sort(sortTs);
   h+=`<h2>Movimientos de hoy</h2><div class="card">${hoy.length?hoy.map(movRow).join(''):'<div class="empty">Aún no hay movimientos hoy.</div>'}</div>`;
   h+=`<div class="banner info small">💡 Pon también una alarma diaria a las ${esc(cfg('horaInicio'))} en el reloj de tu celular. La app te avisa cuando la abres, pero no puede sonar si está cerrada.</div>`;
@@ -513,6 +525,7 @@ function vInicioAdmin(){
     <button class="tile" data-act="nExtra"><span class="e">⏱️</span>Horas extra</button>
     <button class="tile" data-act="nGasto"><span class="e">🧾</span>Gasto</button>
     <button class="tile" data-act="nVenta"><span class="e">💧</span>Venta</button>
+    <button class="tile" data-act="tab" data-id="cobrar"><span class="e">💵</span>Por cobrar${(()=>{const n=S.movs.filter(m=>m.tipo==='venta'&&vigente(m)&&m.pago==='pendiente').length;return n?` (${n})`:''})()}</button>
     <button class="tile" data-act="tab" data-id="facturas"><span class="e">🧾</span>Facturas diésel${facturaPend().length?` (${facturaPend().length})`:''}</button></div>`;
   const rec=S.movs.slice().sort(sortTs).slice(0,15);
   h+=`<h2>Movimientos recientes</h2><div class="card">${rec.length?rec.map(movRow).join(''):'<div class="empty">Todavía no hay movimientos. Empieza asignando un pedido o cambia a "Ver como chofer" para probar.</div>'}</div>`;
@@ -544,13 +557,16 @@ function vAutorizar(){
   const p=pendientes();let h='';
   if(!p.movs.length&&!p.reps.length)return `<div class="card empty" style="padding:40px 10px">✅ No tienes nada pendiente.</div>`;
   p.movs.sort(sortTs).forEach(m=>{
-    let b='',extra='';
-    if(m.correccionEstado==='pendiente'){extra=`<div class="banner warn small" style="margin:8px 0 0">✏️ Pide corrección: ${esc(m.correccion)}</div>`;
+    let b='',extra='';const I=esc(m.id);
+    if(m.precioEstado==='por_revisar'&&vigente(m)){extra+=`<div class="banner info small" style="margin:8px 0 0">💲 Venta sin pedido asignado: ¿el precio de ${money(m.monto)} es correcto?</div><div class="btns"><button class="btn sm ok" data-act="precioOk" data-id="${I}">Precio correcto</button><button class="btn sm warn" data-act="precioCorr" data-id="${I}">Corregir precio</button></div>`}
+    if(m.creditoEstado==='por_autorizar'&&vigente(m)){extra+=`<div class="banner warn small" style="margin:8px 0 0">🤝 Le quedaron a deber ${money(m.monto)} en ${esc(m.lugar)}. ¿Aceptas el crédito?</div><div class="btns"><button class="btn sm ok" data-act="credOk" data-id="${I}">Sí, acepto el crédito</button><button class="btn sm bad" data-act="credNo" data-id="${I}">No, que lo cobre</button></div>`}
+    if(m.correccionEstado==='pendiente'){extra+=`<div class="banner warn small" style="margin:8px 0 0">✏️ Pide corrección: ${esc(m.correccion)}</div>`;
       b=`<button class="btn sm bad" data-act="corrAnular" data-id="${esc(m.id)}">Anular movimiento</button><button class="btn sm sec" data-act="corrOk" data-id="${esc(m.id)}">Ya lo corregí / dejar igual</button>`}
+    else if(m.estado==='ok')b='';
     else if(m.estado==='por_confirmar')b=`<button class="btn sm ok" data-act="depOk" data-id="${esc(m.id)}">Sí me llegó</button><button class="btn sm bad" data-act="rechazar" data-id="${esc(m.id)}">No me llegó</button>`;
     else if(m.tipo==='extra')b=`<button class="btn sm ok" data-act="autExtra" data-id="${esc(m.id)}">Autorizar y poner monto</button><button class="btn sm bad" data-act="rechazar" data-id="${esc(m.id)}">Rechazar</button>`;
     else b=`<button class="btn sm ok" data-act="aprobar" data-id="${esc(m.id)}">Autorizar</button><button class="btn sm bad" data-act="rechazar" data-id="${esc(m.id)}">Rechazar</button>`;
-    h+=`<div class="card">${movRow(m)}${m.motivo&&m.tipo!=='extra'?`<div class="small">Motivo: ${esc(m.motivo)}</div>`:''}${extra}${m.foto?`<button type="button" class="btn sec sm" style="margin-top:8px" data-act="verMov" data-id="${esc(m.id)}">Ver foto</button>`:''}<div class="btns">${b}</div></div>`;
+    h+=`<div class="card">${movRow(m)}${m.motivo&&m.tipo!=='extra'?`<div class="small">Motivo: ${esc(m.motivo)}</div>`:''}${extra}${m.foto?`<button type="button" class="btn sec sm" style="margin-top:8px" data-act="verMov" data-id="${esc(m.id)}">Ver foto</button>`:''}${b?`<div class="btns">${b}</div>`:''}</div>`;
   });
   p.reps.forEach(r=>h+=`<div class="card"><b>🚨 Reparación urgente</b><div>${esc(r.desc)}</div><div class="small mut">${new Date(r.ts).toLocaleString('es-MX')}</div>${fotoImg(r.foto)}
     <div class="btns"><button class="btn sm ok" data-act="repAut" data-id="${esc(r.id)}">Autorizar</button><button class="btn sm bad" data-act="repRech" data-id="${esc(r.id)}">Rechazar</button></div></div>`);
@@ -634,6 +650,16 @@ function vTaller(){
   if(hist.length)h+=`<h2>Historial</h2>`+hist.map(repRow).join('');
   return h;
 }
+function vCobrar(){
+  const pc=S.movs.filter(m=>m.tipo==='venta'&&vigente(m)&&m.pago==='pendiente').sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  const tot=pc.reduce((a,m)=>a+(+m.monto||0),0);
+  let h=`<div class="card"><div class="mut small">Te deben en total</div><div class="big">${money(tot)}</div><div class="small mut">${pc.length} venta(s) por cobrar</div></div>`;
+  if(!pc.length)return h+'<div class="card empty">✅ Nadie te debe.</div>';
+  const g={};pc.forEach(m=>{(g[m.lugar||'—']=g[m.lugar||'—']||[]).push(m)});
+  Object.entries(g).sort((a,b)=>b[1].reduce((s,m)=>s+(+m.monto||0),0)-a[1].reduce((s,m)=>s+(+m.monto||0),0)).forEach(([l,ms])=>{
+    h+=`<div class="card"><div class="row" style="padding-top:0"><h3>${esc(l)}</h3><b>${money(ms.reduce((s,m)=>s+(+m.monto||0),0))}</b></div>${ms.map(movRow).join('')}</div>`});
+  return h;
+}
 function vFacturas(){
   const fp=facturaPend().sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));const mes=today().slice(0,7);
   let h=`<div class="card"><div class="mut small">Tickets de diésel por facturar</div><div class="big">${money(fp.reduce((a,m)=>a+(+m.monto||0),0))}</div><div class="small mut">${fp.length} ticket(s). Factúralos antes de que termine el mes.</div></div>`;
@@ -682,11 +708,11 @@ function draw(){
   if(!S.isOwner)chips.push('<button class="chip" data-act="logout">Salir</button>');
   $('#hbtns').innerHTML=S.loaded?chips.join(''):'';
   const tabs=adm?TABS_ADMIN:TABS_CHOFER;
-  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes','facturas'].includes(S.tab))||((S.tab==='ajustes'||S.tab==='facturas')&&!adm))S.tab=tabs[0][0];
+  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes','facturas','cobrar'].includes(S.tab))||(['ajustes','facturas','cobrar'].includes(S.tab)&&!adm))S.tab=tabs[0][0];
   if(!S.loaded){$('#main').innerHTML=`<div class="load">${S.slow?'La conexión está lenta. Seguimos intentando…':'Cargando datos…'}</div>`;$('#nav').innerHTML='';return}
   const np=adm?nPend():0;const npe=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino').length;
   $('#nav').innerHTML=tabs.map(([k,i,n])=>{const bd=k==='autorizar'&&np?np:k==='pedidos'&&!adm&&npe?npe:0;return `<button class="${S.tab===k?'on':''}" data-act="tab" data-id="${k}"><span class="ic">${i}</span>${n}${bd?`<span class="badge">${bd}</span>`:''}</button>`}).join('');
-  const V={facturas:vFacturas,hoy:vHoyChofer,inicio:vInicioAdmin,pedidos:vPedidos,autorizar:vAutorizar,semana:vSemana,taller:vTaller,ajustes:vAjustes};
+  const V={cobrar:vCobrar,facturas:vFacturas,hoy:vHoyChofer,inicio:vInicioAdmin,pedidos:vPedidos,autorizar:vAutorizar,semana:vSemana,taller:vTaller,ajustes:vAjustes};
   let html='';try{html=(V[S.tab]||V.inicio)()}catch(e){console.error(e);html='<div class="card">Ocurrió un error al mostrar esta sección.</div>'}
   if(S.err)html=`<div class="banner warn small">Problema de conexión: algunos datos pueden no estar actualizados.</div>`+html;
   $('#main').innerHTML=html;
@@ -696,6 +722,11 @@ function draw(){
 const findMov=id=>S.movs.find(m=>m.id===id);
 const ACT={
   closeSheet,
+  precioOk:d=>updMov(d.id,{precioEstado:'ok'}).then(o=>o&&toast('Precio confirmado')),
+  precioCorr:d=>{const m=findMov(d.id);if(!m)return;sheet('💲 Corregir precio',`<div class="mut">${esc(m.lugar)} · ${num(m.litros)} L · registró ${money(m.monto)}</div>${fNum('monto','Precio correcto ($)','required')}<div class="hint">Si la venta fue en efectivo, la caja del chofer se ajusta sola.</div>`,
+    async x=>updMov(m.id,{monto:+x.monto,precioEstado:'corregido',montoOriginal:m.monto}).then(o=>{if(o)toast('Precio corregido');return o}),{btn:'Guardar precio'})},
+  credOk:d=>updMov(d.id,{creditoEstado:'aceptado'}).then(o=>o&&toast('Crédito aceptado')),
+  credNo:d=>updMov(d.id,{creditoEstado:'rechazado'}).then(o=>o&&toast('Le avisamos al chofer que debe cobrarlo')),
   facturar:async d=>{if(await updMov(d.id,{facturado:true,facturadoFecha:today()})){toast('Marcado como facturado');if($('#sheet').classList.contains('on'))closeSheet()}},
   desfacturar:d=>updMov(d.id,{facturado:false}).then(o=>o&&toast('Regresó a pendientes')),
   install:()=>{const e=S.installEvt;if(!e)return;S.installEvt=null;e.prompt();render()},
