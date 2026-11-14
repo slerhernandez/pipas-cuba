@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pipas Cuba</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta name="theme-color" content="#0b5ea8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef4f8;--card:#fff;--ink:#0d2233;--mut:#5b7183;--line:#d9e4ec;--pri:#0b5ea8;--pri2:#083a69;--aqua:#13a8c9;--ok:#1d8048;--warn:#b86e00;--bad:#c62e2e}
+*{box-sizing:border-box}
+body{margin:0;font-family:Barlow,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:17px;line-height:1.3;padding-bottom:86px}
+header{background:linear-gradient(135deg,var(--pri2),var(--pri) 60%,var(--aqua));color:#fff;padding:14px 16px 16px;position:sticky;top:0;z-index:5}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:720px;margin:0 auto}
+.brand{font-weight:800;font-size:23px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+.lbadge{background:#fff;border-radius:12px;width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.2)}.lbadge svg{width:34px;height:34px}.brand{letter-spacing:1px}
+.role{font-size:14px;opacity:.9;margin-top:2px}
+.hbtns{display:flex;gap:6px}
+.chip{border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.14);color:#fff;border-radius:99px;padding:6px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+main{padding:14px;max-width:720px;margin:0 auto}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(13,34,51,.06);border:1px solid var(--line)}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.7px;color:var(--mut);margin:20px 4px 8px;font-weight:700}
+h3{margin:0 0 6px;font-size:18px}
+.big{font-size:38px;font-weight:800;letter-spacing:-.5px}
+.mid{font-size:24px;font-weight:800}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{border:1px solid var(--line);background:#fff;border-radius:14px;padding:14px 8px;font:inherit;font-weight:700;font-size:15px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;text-align:center}
+.tile .e{font-size:26px}
+.tile:active{background:#e6eef5}
+.btn{border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:700;background:var(--pri);color:#fff;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
+.btn:disabled{opacity:.5}
+.btn.sec{background:#e3edf5;color:var(--pri2)}
+.btn.ok{background:var(--ok)}.btn.bad{background:var(--bad)}.btn.warn{background:var(--warn)}
+.btn.block{width:100%;display:block}
+.btn.sm{padding:8px 12px;font-size:15px;border-radius:10px}
+.btn.huge{font-size:21px;padding:18px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row.tap{cursor:pointer}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:#e3edf5;color:var(--pri2);vertical-align:middle}
+.pill.warn{background:#fff0d1;color:#7d4b00}.pill.bad{background:#fde1e1;color:#9b1c1c}.pill.ok{background:#dcf2e5;color:#165f36}
+.mut{color:var(--mut)}.small{font-size:14px}.xs{font-size:12.5px}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.r{text-align:right}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:6}
+nav button{flex:1;border:0;background:none;font:inherit;font-size:12.5px;color:var(--mut);padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;cursor:pointer}
+nav button.on{color:var(--pri);font-weight:800}
+nav .ic{font-size:21px;line-height:1}
+.badge{position:absolute;top:-2px;left:calc(50% + 6px);background:var(--bad);color:#fff;font-size:11px;font-weight:800;border-radius:99px;padding:1px 6px}
+#sheet{display:none}
+#sheet.on{display:block}
+.ov{position:fixed;inset:0;background:rgba(8,26,40,.45);z-index:10}
+.panel{position:fixed;left:0;right:0;bottom:0;max-height:92vh;overflow:auto;background:#fff;border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));z-index:11;max-width:720px;margin:0 auto}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:20px}
+.x{border:0;background:#eef3f7;border-radius:99px;width:36px;height:36px;font-size:18px;cursor:pointer}
+form label.l{display:block;font-size:14.5px;font-weight:700;color:var(--mut);margin:12px 0 5px}
+input,select,textarea{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fbfdfe;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--aqua);border-color:transparent}
+textarea{min-height:70px}
+.seg{display:flex;gap:6px}
+.seg label{flex:1;margin:0;cursor:pointer}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg span{display:block;text-align:center;padding:11px 4px;border:1px solid var(--line);border-radius:10px;font-weight:700;font-size:15px}
+.seg input:checked+span{background:var(--pri);color:#fff;border-color:var(--pri)}
+.hint{font-size:13.5px;color:var(--mut);margin-top:4px}
+.banner{background:var(--bad);color:#fff;border-radius:14px;padding:14px;font-weight:700;margin-bottom:12px}
+.banner.warn{background:#fff0d1;color:#6e4200;border:1px solid #f3d495}
+.banner.info{background:#e3f3f8;color:#0a4d63;border:1px solid #b9e2ee;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+td:first-child,th:first-child{text-align:left}
+th{font-size:12.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+tr.alert td{background:#fdeeee}
+.thumb{width:100%;max-height:280px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:#f4f7f9;margin-top:8px}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+.kv:last-child{border-bottom:0}
+.kv.tot{border-top:2px solid var(--ink);border-bottom:0;margin-top:4px;padding-top:8px;font-weight:800;font-size:19px}
+.wnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wnav b{text-align:center;flex:1}
+#toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#0d2233;color:#fff;padding:11px 16px;border-radius:12px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30;max-width:90vw;text-align:center;font-weight:600}
+#toast.on{opacity:1}
+.empty{text-align:center;color:var(--mut);padding:18px 6px}
+.center{text-align:center}
+.load{padding:60px 20px;text-align:center;color:var(--mut)}
+</style>
+</head>
+<body>
+<header><div class="hrow">
+  <div><div class="brand"><span class="lbadge"><svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><clipPath id="lt"><rect x="5" y="17" width="38" height="25" rx="10"/></clipPath></defs><path d="M52 4c-2.6 3.4-4.4 5.9-4.4 8.1a4.4 4.4 0 0 0 8.8 0C56.4 9.9 54.6 7.4 52 4Z" fill="#13A8C9"/><g clip-path="url(#lt)"><rect x="5" y="17" width="38" height="25" fill="#1F4F9E"/><rect x="5" y="22" width="38" height="5" fill="#fff"/><rect x="5" y="32" width="38" height="5" fill="#fff"/><path d="M5 17 24 29.5 5 42Z" fill="#D7262E"/><path d="m11.5 25.6 1.1 2.6 2.8.2-2.1 1.8.7 2.7-2.5-1.5-2.4 1.5.7-2.7-2.2-1.8 2.8-.2Z" fill="#fff"/></g><path d="M45 42V27a4 4 0 0 1 4-4h4.5a4 4 0 0 1 3.3 1.8l2.6 3.9a4 4 0 0 1 .6 2.1V42Z" fill="#12325E"/><path d="M49 27h4.6l2.6 4H49Z" fill="#CFE9F2"/><rect x="3" y="42" width="57" height="4.5" rx="2.2" fill="#12325E"/><circle cx="16" cy="49" r="6.5" fill="#12325E"/><circle cx="16" cy="49" r="2.4" fill="#fff"/><circle cx="50" cy="49" r="6.5" fill="#12325E"/><circle cx="50" cy="49" r="2.4" fill="#fff"/></svg></span>PIPAS CUBA</div>
+  <div class="role" id="role">Cargando…</div></div>
+  <div class="hbtns" id="hbtns"></div>
+</div></header>
+<main id="main"><div class="load">Cargando…</div></main>
+<nav id="nav"></nav>
+<div id="sheet"></div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+"use strict";
+/* ---------- utilidades ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>(n<0?'-':'')+'$'+Math.abs(Math.round(+n||0)).toLocaleString('es-MX');
+const num=n=>(+n||0).toLocaleString('es-MX',{maximumFractionDigits:1});
+const has=v=>v!==undefined&&v!==null&&v!=='';
+const pad=n=>String(n).padStart(2,'0');
+const fmtD=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>fmtD(new Date());
+const parseD=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const addDays=(s,n)=>{const d=parseD(s);d.setDate(d.getDate()+n);return fmtD(d)};
+const satOf=s=>addDays(s,6-parseD(s).getDay());
+const inWeek=(f,sat)=>!!f&&f>addDays(sat,-7)&&f<=sat;
+const DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
+const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const dLabel=s=>{const d=parseD(s);return DIAS[d.getDay()]+' '+d.getDate()+' '+MESES[d.getMonth()]};
+const hhmm=ts=>{if(!ts)return'';const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const slug=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80)||'lugar';
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2600)}
+
+/* ---------- estado ---------- */
+const S={db:null,user:null,assets:null,isOwner:false,login:false,noconfig:false,norole:false,email:'',role:'',roles:[],installEvt:null,view:'admin',tab:null,
+  movs:[],pedidos:[],jornadas:[],reps:[],cortes:[],lugares:[],config:{},
+  loaded:false,slow:false,nodb:false,week:satOf(today()),memo:{},firstSat:null};
+try{const v=localStorage.getItem('pc_view');if(v)S.view=v}catch(e){}
+
+const T={
+  venta:{n:'Venta',e:'💧'},
+  sueldo:{n:'Sueldo del día',e:'👷'},
+  diesel:{n:'Diésel',e:'⛽'},
+  gasto:{n:'Gasto',e:'🧾'},
+  extra:{n:'Horas extra',e:'⏱️'},
+  prestamo:{n:'Préstamo',e:'🤝'},
+  dep_admin:{n:'Depósito del admin al chofer',e:'🏦'},
+  dep_chofer:{n:'Depósito del chofer al admin',e:'📤'},
+  reparacion:{n:'Reparación',e:'🔧'}
+};
+const cfg=k=>{const d={sueldo:500,horaInicio:'08:00',umbralDedos:0.5,litrosPorDedo:'',nombreChofer:'Chofer'};return has(S.config[k])?S.config[k]:d[k]};
+const isAdmin=()=>S.isOwner&&S.view==='admin';
+const me=()=>isAdmin()?'admin':'chofer';
+
+/* ---------- cálculos ---------- */
+const activo=m=>!['anulado','rechazado','pendiente'].includes(m.estado);
+const vigente=m=>!['anulado','rechazado'].includes(m.estado);
+function cajaDelta(m){
+  if(!activo(m))return 0;const v=+m.monto||0;
+  switch(m.tipo){
+    case'venta':return m.pago==='efectivo'?v:0;
+    case'dep_admin':return v;
+    case'prestamo':return m.origen==='caja'?-v:0;
+    case'reparacion':return m.pagadoPor==='caja'?-v:0;
+    default:return -v;
+  }
+}
+const cajaFecha=m=>m.tipo==='venta'&&m.fechaCobro?m.fechaCobro:m.fecha;
+function calcWeek(sat,prev){
+  const fondoIni=prev?prev.fondoQueda:0,deudaAnt=prev?prev.deudaPasa:0;
+  const caja=fondoIni+S.movs.filter(m=>inWeek(cajaFecha(m),sat)).reduce((a,m)=>a+cajaDelta(m),0);
+  const prest=S.movs.filter(m=>m.tipo==='prestamo'&&activo(m)&&inWeek(m.fecha,sat)).reduce((a,m)=>a+(+m.monto||0),0);
+  const deudaTotal=deudaAnt+prest;
+  const c=S.cortes.find(x=>x.id===sat);const closed=!!(c&&c.cerrado);
+  return{sat,fondoIni,deudaAnt,caja,prest,deudaTotal,closed,corte:c,
+    fondoQueda:closed?(+c.fondoQueda||0):caja,deudaPasa:closed?(+c.deudaPasa||0):deudaTotal};
+}
+function weekState(sat){
+  if(S.memo[sat])return S.memo[sat];
+  let w=S.firstSat&&S.firstSat<sat?S.firstSat:sat,prev=null,guard=0;
+  for(;w<=sat&&guard<600;w=addDays(w,7),guard++){if(!S.memo[w])S.memo[w]=calcWeek(w,prev);prev=S.memo[w]}
+  return S.memo[sat]||calcWeek(sat,null);
+}
+function weekReport(sat){
+  const ms=S.movs.filter(m=>inWeek(m.fecha,sat)&&vigente(m));
+  const sum=(arr)=>arr.reduce((a,m)=>a+(+m.monto||0),0);
+  const ventas=ms.filter(m=>m.tipo==='venta');
+  const act=t=>ms.filter(m=>m.tipo===t&&activo(m));
+  const r={ventas,
+    ingEf:sum(ventas.filter(m=>m.pago==='efectivo')),ingTr:sum(ventas.filter(m=>m.pago==='transferencia')),ingPend:sum(ventas.filter(m=>m.pago==='pendiente')),
+    ingresos:sum(ventas),diesel:sum(act('diesel')),dieselL:act('diesel').reduce((a,m)=>a+(+m.litros||0),0),
+    sueldos:sum(act('sueldo')),extras:sum(act('extra')),gastos:sum(act('gasto')),repar:sum(act('reparacion')),
+    viajes:ventas.length,litrosAgua:ventas.reduce((a,m)=>a+(+m.litros||0),0),
+    dias:S.jornadas.filter(j=>inWeek(j.id,sat)).length};
+  r.egresos=r.diesel+r.sueldos+r.extras+r.gastos+r.repar;r.utilidad=r.ingresos-r.egresos;
+  const pl={};ventas.forEach(m=>{const k=m.lugar||'—';pl[k]=pl[k]||{n:k,v:0,l:0,$:0};pl[k].v++;pl[k].l+=(+m.litros||0);pl[k].$+=(+m.monto||0)});
+  r.porLugar=Object.values(pl).sort((a,b)=>b.$-a.$);
+  return r;
+}
+function lpdEstimado(){
+  let L=0,D=0,n=0;
+  S.movs.filter(m=>m.tipo==='diesel'&&activo(m)&&has(m.dedosAntes)&&has(m.dedosDespues)&&+m.litros>0).forEach(m=>{const d=+m.dedosDespues-(+m.dedosAntes);if(d>0){L+=+m.litros;D+=d;n++}});
+  return n>=1&&D>0?{v:L/D,n}:null;
+}
+function lpd(){const c=cfg('litrosPorDedo');if(has(c)&&+c>0)return{v:+c,n:0,manual:true};return lpdEstimado()}
+function dedosDia(f){
+  const j=S.jornadas.find(x=>x.id===f);
+  const prev=S.jornadas.filter(x=>x.id<f&&has(x.dedosCierre)).sort((a,b)=>a.id<b.id?1:-1)[0];
+  const cargas=S.movs.filter(m=>m.tipo==='diesel'&&activo(m)&&m.fecha===f);
+  let subio=0;cargas.forEach(m=>{if(has(m.dedosAntes)&&has(m.dedosDespues))subio+=(+m.dedosDespues-(+m.dedosAntes))});
+  const litros=cargas.reduce((a,m)=>a+(+m.litros||0),0);
+  const ini=j&&has(j.dedosInicio)?+j.dedosInicio:null,fin=j&&has(j.dedosCierre)?+j.dedosCierre:null;
+  const noche=prev&&ini!==null?(+prev.dedosCierre-ini):null;
+  const consumo=ini!==null&&fin!==null?ini+subio-fin:null;
+  return{f,j,prev,ini,fin,noche,subio,litros,consumo,cargas};
+}
+function cargaNoCuadra(m){
+  const L=lpd();if(!L||(!L.manual&&L.n<3))return null;
+  if(!has(m.dedosAntes)||!has(m.dedosDespues)||!(+m.litros>0))return null;
+  const d=+m.dedosDespues-(+m.dedosAntes);if(d<=0)return{litros:+m.litros,real:0};
+  const real=d*L.v;return(+m.litros)/real>1.35?{litros:+m.litros,real}:null;
+}
+function pendientes(){
+  const a=[];
+  S.movs.forEach(m=>{if(m.estado==='pendiente'||m.estado==='por_confirmar'||m.correccionEstado==='pendiente')a.push(m)});
+  return{movs:a,reps:S.reps.filter(r=>r.estado==='solicitada')};
+}
+function nPend(){const p=pendientes();return p.movs.length+p.reps.length}
+function alertas(){
+  const out=[];const t=today();const umbral=+cfg('umbralDedos')||0.5;
+  for(let i=0;i<7;i++){const f=addDays(t,-i);const d=dedosDia(f);
+    if(d.noche!==null&&d.noche>=umbral)out.push({lvl:'bad',t:`⛽ El tanque bajó ${num(d.noche)} dedo(s) durante la noche (${dLabel(d.prev.id)} → ${dLabel(f)}).`});
+    d.cargas.forEach(m=>{const x=cargaNoCuadra(m);if(x)out.push({lvl:'bad',t:`⛽ Carga del ${dLabel(f)}: el ticket dice ${num(x.litros)} L pero el tanque subió solo ~${num(x.real)} L.`})});
+  }
+  const h=cfg('horaInicio');const now=new Date();const [hh,mm]=h.split(':').map(Number);
+  const lim=new Date();lim.setHours(hh,mm+15,0,0);
+  if(now>lim&&now.getDay()!==0&&!S.jornadas.find(j=>j.id===t))out.push({lvl:'warn',t:`⏰ El chofer aún no inicia jornada hoy (hora de entrada ${h}).`});
+  S.reps.filter(r=>r.tipo==='rutinaria'&&r.estado==='programada'&&r.fechaProg&&r.fechaProg<t).forEach(r=>out.push({lvl:'warn',t:`🔧 Mantenimiento vencido: ${r.desc} (era el ${dLabel(r.fechaProg)}).`}));
+  const n=nPend();if(n)out.push({lvl:'warn',t:`✅ Tienes ${n} pendiente(s) por autorizar o confirmar.`,act:'autorizar'});
+  return out;
+}
+
+/* ---------- escritura ---------- */
+async function save(p,ok){try{await p;if(ok)toast(ok);return true}catch(e){console.error(e);const m=String(e&&e.message||'');toast(/administrador|autoriz|confirm/i.test(m)?m:'No se pudo guardar. Revisa tu conexión e intenta de nuevo.');return false}}
+const col=n=>DB.collection(n);
+async function addMov(data){const ref=col('movs').doc();return save(ref.set(Object.assign({ts:Date.now(),fecha:today(),estado:'ok',por:me()},data)))}
+async function updMov(id,data){return save(col('movs').doc(id).update(data))}
+async function upsertLugar(nombre,ubic){
+  if(!nombre)return;const id=slug(nombre);const ex=S.lugares.find(l=>l.id===id);
+  if(!ex)await save(col('lugares').doc(id).set({nombre,ubic:ubic||''}));
+  else if(ubic&&ubic!==ex.ubic)await save(col('lugares').doc(id).update({ubic}));
+}
+async function comprimir(file){
+  try{const bmp=await createImageBitmap(file);const s=Math.min(1,1400/Math.max(bmp.width,bmp.height));
+    const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);
+    c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.72));if(b)return{blob:b,type:'image/jpeg'}}catch(e){}
+  const ok=['image/jpeg','image/png','image/webp'];return ok.includes(file.type)?{blob:file,type:file.type}:null;
+}
+async function subirFoto(file){
+  if(!file||!file.size||!S.assets)return null;
+  try{const c=await comprimir(file);if(!c){toast('Formato de foto no soportado');return null}
+    const path=uid()+(c.type==='image/png'?'.png':c.type==='image/webp'?'.webp':'.jpg');const{error}=await sb.storage.from('fotos').upload(path,c.blob,{contentType:c.type});if(error)throw error;return path}
+  catch(e){console.error(e);toast('La foto no se pudo subir; se guardó sin foto.');return null}
+}
+const fotoUrl=p=>sb?sb.storage.from('fotos').getPublicUrl(p).data.publicUrl:'';
+const fotoImg=id=>id?`<img class="thumb" src="${fotoUrl(id)}" alt="Foto" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hint',textContent:'(La foto no está disponible)'}))">`:'';
+
+/* ---------- hoja (formularios) ---------- */
+function closeSheet(){$('#sheet').classList.remove('on');$('#sheet').innerHTML=''}
+function sheet(title,body,onSubmit,opts={}){
+  const sub=onSubmit?`<button class="btn block huge" style="margin-top:18px" type="submit">${esc(opts.btn||'Guardar')}</button>`:'';
+  $('#sheet').innerHTML=`<div class="ov" data-act="closeSheet"></div><form class="panel" id="sf" autocomplete="off"><div class="ph"><b>${title}</b><button type="button" class="x" data-act="closeSheet" aria-label="Cerrar">✕</button></div>${body}${sub}</form>`;
+  $('#sheet').classList.add('on');
+  const f=$('#sf');
+  f.onsubmit=async e=>{e.preventDefault();if(!onSubmit)return;const b=f.querySelector('button[type=submit]');b.disabled=true;b.textContent='Guardando…';
+    const fd={};new FormData(f).forEach((v,k)=>fd[k]=v);
+    let ok=false;try{ok=await onSubmit(fd,f)}catch(err){console.error(err);toast('Ocurrió un error')}
+    if(ok!==false)closeSheet();else{b.disabled=false;b.textContent=opts.btn||'Guardar'}};
+  if(opts.mount)opts.mount(f);
+  const first=f.querySelector('input:not([type=radio]):not([type=file]),textarea');if(first&&!opts.nofocus)setTimeout(()=>first.focus(),60);
+}
+const fIn=(name,label,attrs='',hint='')=>`<label class="l">${label}</label><input name="${name}" ${attrs}>${hint?`<div class="hint">${hint}</div>`:''}`;
+const fNum=(name,label,attrs='',hint='')=>fIn(name,label,`type="number" inputmode="decimal" step="any" ${attrs}`,hint);
+const fArea=(name,label,ph='')=>`<label class="l">${label}</label><textarea name="${name}" placeholder="${esc(ph)}"></textarea>`;
+const fSeg=(name,label,opts,val)=>`<label class="l">${label}</label><div class="seg">${opts.map(([v,t])=>`<label><input type="radio" name="${name}" value="${v}" ${v===val?'checked':''}><span>${t}</span></label>`).join('')}</div>`;
+const fFoto=(label,req)=>S.assets?`<label class="l">${label}${req?'':' (opcional)'}</label><input type="file" name="foto" accept="image/*" capture="environment" ${req?'required':''}>`:`<div class="hint" style="margin-top:12px">📷 Las fotos no están disponibles en este dispositivo.</div>`;
+const fFecha=()=>isAdmin()?fIn('fecha','Fecha',`type="date" value="${today()}"`):'';
+const dlLugares=()=>`<datalist id="dlL">${S.lugares.map(l=>`<option value="${esc(l.nombre)}">`).join('')}</datalist>`;
+function lugarMount(f){const i=f.querySelector('[name=lugar]'),u=f.querySelector('[name=ubic]');if(!i||!u)return;
+  i.addEventListener('change',()=>{const l=S.lugares.find(x=>x.id===slug(i.value));if(l&&l.ubic&&!u.value)u.value=l.ubic})}
+
+/* ---------- formularios ---------- */
+function fVenta(pre={}){
+  sheet('💧 Registrar venta',`${dlLugares()}
+    ${fIn('lugar','Lugar',`list="dlL" required placeholder="Ej. Hospital Premium Hill" value="${esc(pre.lugar||'')}"`)}
+    <div class="grid2"><div>${fNum('litros','Litros que dejó',`placeholder="20000" value="${esc(pre.litros||'')}"`)}</div><div>${fNum('monto','Cobro ($)',`required placeholder="1000" value="${esc(pre.monto||'')}"`)}</div></div>
+    ${fSeg('pago','¿Cómo pagó?',[['efectivo','Efectivo'],['transferencia','Transferencia'],['pendiente','Me quedó a deber']],'efectivo')}
+    ${fIn('ubic','Ubicación (opcional)',`placeholder="Enlace de Maps o coordenadas" value="${esc(pre.ubic||'')}"`,'Si es un lugar nuevo, pega el enlace que te mandaron por WhatsApp.')}
+    ${fFecha()}${fArea('nota','Nota (opcional)')}`,
+  async d=>{if(!(+d.monto>0)){toast('Escribe el cobro');return false}
+    const lugar=d.lugar.trim();
+    const ok=await addMov({tipo:'venta',lugar,litros:+d.litros||0,monto:+d.monto,pago:d.pago,nota:d.nota||'',fecha:d.fecha||today(),pedidoId:pre.pedidoId||null});
+    if(!ok)return false;await upsertLugar(lugar,(d.ubic||'').trim());
+    if(pre.pedidoId)await save(col('pedidos').doc(pre.pedidoId).update({estado:'entregado',entregadoTs:Date.now()}));
+    toast('Venta registrada');},{mount:lugarMount});
+}
+function fDiesel(){
+  sheet('⛽ Cargar diésel',`<div class="grid2"><div>${fNum('monto','Monto ($)','required')}</div><div>${fNum('litros','Litros','required')}</div></div>
+    <div class="grid2"><div>${fNum('dedosAntes','Dedos antes de cargar','step="0.5" required')}</div><div>${fNum('dedosDespues','Dedos después','step="0.5" required')}</div></div>
+    <div class="hint">Mide con la varilla antes y después de cargar.</div>${fFoto('Foto del ticket',false)}${fFecha()}`,
+  async d=>{const foto=await subirFoto(d.foto);
+    return addMov({tipo:'diesel',monto:+d.monto,litros:+d.litros,dedosAntes:+d.dedosAntes,dedosDespues:+d.dedosDespues,foto,fecha:d.fecha||today()}).then(ok=>{if(ok)toast('Diésel registrado');return ok})});
+}
+function fGasto(){
+  sheet('🧾 Registrar gasto',`${fIn('concepto','Concepto','required placeholder="Ej. Manguera, casetas, refacción"')}${fNum('monto','Monto ($)','required')}
+    ${fFoto('Foto del ticket',false)}${fFecha()}${isAdmin()?'':'<div class="banner info" style="margin-top:12px">Este gasto quedará pendiente hasta que el administrador lo autorice.</div>'}`,
+  async d=>{const foto=await subirFoto(d.foto);
+    return addMov({tipo:'gasto',concepto:d.concepto.trim(),monto:+d.monto,foto,estado:isAdmin()?'ok':'pendiente',fecha:d.fecha||today()}).then(ok=>{if(ok)toast(isAdmin()?'Gasto registrado':'Enviado para autorización');return ok})});
+}
+function fPrestamo(){
+  sheet('🤝 '+(isAdmin()?'Registrar préstamo':'Pedir préstamo'),`${fNum('monto','Monto ($)','required')}
+    ${fSeg('origen','¿De dónde sale el dinero?',[['caja','De la caja (ventas)'],['deposito','Depósito del admin']],'caja')}
+    ${fArea('motivo','Motivo (opcional)')}${fFecha()}
+    <div class="hint">Se le cobra en el corte del sábado.</div>`,
+  async d=>addMov({tipo:'prestamo',monto:+d.monto,origen:d.origen,motivo:d.motivo||'',estado:isAdmin()?'ok':'pendiente',fecha:d.fecha||today()}).then(ok=>{if(ok)toast(isAdmin()?'Préstamo registrado':'Préstamo enviado para autorización');return ok}));
+}
+function fExtra(){
+  sheet('⏱️ Horas extra',`${fNum('horas','Horas extra trabajadas','required step="0.5"')}
+    ${isAdmin()?fNum('monto','Monto a pagar ($)','required','Se paga del efectivo de la caja.'):''}
+    ${fArea('motivo','Motivo','Ej. Viaje extra al Hospital')}${fFecha()}
+    ${isAdmin()?'':'<div class="banner info" style="margin-top:12px">El administrador autoriza y pone el monto. Ya autorizado, lo tomas de la caja del día.</div>'}`,
+  async d=>addMov({tipo:'extra',horas:+d.horas,monto:isAdmin()?+d.monto:0,motivo:d.motivo||'',estado:isAdmin()?'ok':'pendiente',fecha:d.fecha||today()}).then(ok=>{if(ok)toast(isAdmin()?'Horas extra registradas':'Enviado para autorización');return ok}));
+}
+function fDepChofer(){
+  sheet('📤 Depósito al administrador',`${fNum('monto','Monto depositado ($)','required')}${fFoto('Foto del comprobante',false)}${fFecha()}
+    <div class="hint">Se descuenta de tu caja. El administrador lo confirma cuando lo vea en su cuenta.</div>`,
+  async d=>{const foto=await subirFoto(d.foto);
+    return addMov({tipo:'dep_chofer',monto:+d.monto,foto,estado:isAdmin()?'ok':'por_confirmar',fecha:d.fecha||today()}).then(ok=>{if(ok)toast('Depósito registrado');return ok})});
+}
+function fDepAdmin(){
+  sheet('🏦 '+(isAdmin()?'Le deposité al chofer':'El admin me depositó'),`${fNum('monto','Monto ($)','required')}${fArea('nota','Para qué es (opcional)','Ej. Para diésel')}${fFecha()}
+    <div class="hint">Suma a la caja del chofer. Si es un préstamo personal, usa "Préstamo" con origen "Depósito del admin".</div>`,
+  async d=>addMov({tipo:'dep_admin',monto:+d.monto,nota:d.nota||'',fecha:d.fecha||today()}).then(ok=>{if(ok)toast('Depósito registrado');return ok}));
+}
+function fPedido(){
+  sheet('📋 Asignar pedido',`${dlLugares()}${fIn('lugar','Lugar / cliente','list="dlL" required')}
+    ${fIn('ubic','Ubicación','placeholder="Pega el enlace de Maps / WhatsApp o coordenadas"','Si ya está guardado el lugar, se llena solo.')}
+    <div class="grid2"><div>${fNum('litros','Litros')}</div><div>${fNum('precio','Precio acordado ($)')}</div></div>
+    <div class="grid2"><div>${fIn('fecha','Día',`type="date" value="${today()}"`)}</div><div>${fIn('hora','Hora (opcional)','type="time"')}</div></div>
+    ${fArea('notas','Indicaciones','Ej. Preguntar por Don Juan, portón negro')}`,
+  async d=>{const lugar=d.lugar.trim();
+    const ok=await save(col('pedidos').doc().set({lugar,ubic:(d.ubic||'').trim(),litros:+d.litros||0,precio:+d.precio||0,fecha:d.fecha||today(),hora:d.hora||'',notas:d.notas||'',estado:'asignado',ts:Date.now()}));
+    if(ok){await upsertLugar(lugar,(d.ubic||'').trim());toast('Pedido asignado')}return ok},{mount:lugarMount});
+}
+function fJornadaIni(){
+  sheet('☀️ Iniciar jornada',`${fNum('dedos','¿Cuántos dedos de diésel tiene el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',true)}
+    <div class="banner info" style="margin-top:12px">Al iniciar se registra tu sueldo del día: <b>${money(cfg('sueldo'))}</b>, que tomas de la caja.</div>`,
+  async d=>{const f=today();const foto=await subirFoto(d.foto);
+    const ok=await save(col('jornadas').doc(f).set({inicio:Date.now(),dedosInicio:+d.dedos,fotoInicio:foto}));
+    if(!ok)return false;
+    await save(col('movs').doc('sueldo-'+f).set({tipo:'sueldo',monto:+cfg('sueldo')||500,fecha:f,ts:Date.now(),estado:'ok',por:'sistema'}));
+    toast('¡Jornada iniciada! Buen día');},{btn:'Iniciar jornada'});
+}
+function fJornadaFin(){
+  sheet('🌙 Cerrar jornada',`${fNum('dedos','¿Con cuántos dedos de diésel queda el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',true)}`,
+  async d=>{const foto=await subirFoto(d.foto);
+    return save(col('jornadas').doc(today()).update({cierre:Date.now(),dedosCierre:+d.dedos,fotoCierre:foto}),'Jornada cerrada. ¡Descansa!')},{btn:'Cerrar jornada'});
+}
+function fRepUrg(){
+  sheet('🚨 Reportar reparación urgente',`${fArea('desc','¿Qué pasó?','Ej. Se ponchó llanta trasera, fuga en la bomba')}${fFoto('Foto',false)}`,
+  async d=>{if(!d.desc.trim()){toast('Describe el problema');return false}const foto=await subirFoto(d.foto);
+    return save(col('reparaciones').doc().set({tipo:'urgente',desc:d.desc.trim(),foto,estado:isAdmin()?'autorizada':'solicitada',ts:Date.now(),por:me()}),isAdmin()?'Reparación registrada':'Reporte enviado al administrador')});
+}
+function fRepRut(){
+  sheet('🗓️ Programar mantenimiento',`${fIn('desc','Mantenimiento','required placeholder="Ej. Cambio de aceite y filtros"')}
+    ${fIn('fechaProg','Fecha programada',`type="date" required value="${addDays(today(),7)}"`)}
+    ${fNum('intervaloDias','Repetir cada (días)','placeholder="Ej. 90"','Al marcarlo como hecho, se programa el siguiente automáticamente.')}`,
+  async d=>save(col('reparaciones').doc().set({tipo:'rutinaria',desc:d.desc.trim(),fechaProg:d.fechaProg,intervaloDias:+d.intervaloDias||0,estado:'programada',ts:Date.now(),por:me()}),'Mantenimiento programado'));
+}
+function fRepHecha(r){
+  sheet('✅ Reparación hecha',`<div class="mut">${esc(r.desc)}</div>${fNum('costo','Costo total ($)','required')}
+    ${fSeg('pagadoPor','¿Quién pagó?',[['caja','Caja del chofer'],['admin','Lo pagó el admin']],isAdmin()?'admin':'caja')}${fArea('nota','Nota (opcional)')}`,
+  async d=>{const ok=await save(col('reparaciones').doc(r.id).update({estado:'hecha',costo:+d.costo,pagadoPor:d.pagadoPor,fechaHecha:today(),nota:d.nota||''}));
+    if(!ok)return false;
+    await addMov({tipo:'reparacion',monto:+d.costo,pagadoPor:d.pagadoPor,concepto:r.desc,repId:r.id});
+    if(r.tipo==='rutinaria'&&+r.intervaloDias>0)await save(col('reparaciones').doc().set({tipo:'rutinaria',desc:r.desc,fechaProg:addDays(today(),+r.intervaloDias),intervaloDias:+r.intervaloDias,estado:'programada',ts:Date.now(),por:'sistema'}));
+    toast('Reparación registrada')});
+}
+function fCobrar(m){
+  sheet('💵 Marcar como cobrado',`<div class="mut">${esc(m.lugar)} · ${money(m.monto)}</div>${fSeg('pago','¿Cómo pagó?',[['efectivo','Efectivo'],['transferencia','Transferencia']],'efectivo')}`,
+  async d=>updMov(m.id,{pago:d.pago,fechaCobro:today()}).then(ok=>{if(ok)toast('Cobro registrado');return ok}));
+}
+function fCorreccion(m){
+  sheet('✏️ Pedir corrección',`${fArea('correccion','¿Qué está mal y cómo debe quedar?','Ej. Eran 15,000 litros, no 20,000')}`,
+  async d=>{if(!d.correccion.trim())return false;return updMov(m.id,{correccion:d.correccion.trim(),correccionEstado:'pendiente'}).then(ok=>{if(ok)toast('Corrección enviada');return ok})});
+}
+function fAutExtra(m){
+  sheet('⏱️ Autorizar horas extra',`<div class="mut">${num(m.horas)} h · ${esc(m.motivo||'')}</div>${fNum('monto','Monto a pagar ($)','required')}`,
+  async d=>updMov(m.id,{estado:'ok',monto:+d.monto,autorizadoTs:Date.now()}).then(ok=>{if(ok)toast('Horas extra autorizadas');return ok}),{btn:'Autorizar'});
+}
+function fCerrar(sat){
+  const w=weekState(sat);
+  sheet('🔒 Cerrar semana',`<div class="mut">${dLabel(addDays(sat,-6))} – ${dLabel(sat)}</div>
+    <div class="kv"><span>Efectivo que debe tener</span><b>${money(w.caja)}</b></div>
+    <div class="kv"><span>Deuda de préstamos</span><b>${money(w.deudaTotal)}</b></div>
+    ${fNum('recibido','Efectivo que te entregó ($)',`required value="${Math.max(0,Math.round(w.caja))}"`,'Si le dejas un fondo para la próxima semana, pon solo lo que recibiste.')}
+    ${fNum('abono','Pago de préstamos ($)',`required value="${Math.round(w.deudaTotal)}"`,'Lo que no pague pasa como deuda a la siguiente semana.')}
+    ${fNum('kmZeek','Km de la semana según Zeek (opcional)')}${fArea('nota','Nota (opcional)')}`,
+  async d=>{const r=weekReport(sat);const c=S.cortes.find(x=>x.id===sat)||{};
+    const data=Object.assign({},c,{cerrado:true,cerradoTs:Date.now(),recibido:+d.recibido||0,abono:+d.abono||0,kmZeek:+d.kmZeek||0,nota:d.nota||'',
+      cajaEsperada:w.caja,deudaTotal:w.deudaTotal,fondoQueda:w.caja-(+d.recibido||0),deudaPasa:w.deudaTotal-(+d.abono||0),
+      ingresos:r.ingresos,egresos:r.egresos,utilidad:r.utilidad});delete data.id;
+    return save(col('cortes').doc(sat).set(data),'Semana cerrada')},{btn:'Cerrar semana'});
+}
+function fAjustes(){
+  const L=lpdEstimado();
+  sheet('⚙️ Ajustes',`${fIn('nombreChofer','Nombre del chofer',`value="${esc(cfg('nombreChofer'))}"`)}
+    ${fNum('sueldo','Sueldo diario ($)',`value="${esc(cfg('sueldo'))}"`)}
+    ${fIn('horaInicio','Hora de inicio de jornada',`type="time" value="${esc(cfg('horaInicio'))}"`)}
+    ${fNum('litrosPorDedo','Litros por dedo',`step="0.1" value="${esc(cfg('litrosPorDedo'))}" placeholder="Automático"`,L?`Cálculo automático actual: ${num(L.v)} L por dedo (con ${L.n} carga(s)). Déjalo vacío para usar el automático.`:'Déjalo vacío y la app lo calculará con las cargas de diésel.')}
+    ${fNum('umbralDedos','Avisarme si de noche baja (dedos)',`step="0.5" value="${esc(cfg('umbralDedos'))}"`)}`,
+  async d=>save(DB.doc('config/general').set({nombreChofer:d.nombreChofer.trim()||'Chofer',sueldo:+d.sueldo||500,horaInicio:d.horaInicio||'08:00',litrosPorDedo:has(d.litrosPorDedo)?+d.litrosPorDedo:'',umbralDedos:+d.umbralDedos||0.5}),'Ajustes guardados'));
+}
+function fLugar(l){
+  sheet('📍 Editar lugar',`${fIn('nombre','Nombre',`required value="${esc(l.nombre)}"`)}${fIn('ubic','Ubicación',`value="${esc(l.ubic||'')}"`)}
+    <button type="button" class="btn bad block" style="margin-top:14px" data-act="delLugar" data-id="${esc(l.id)}">Borrar lugar</button>`,
+  async d=>save(col('lugares').doc(l.id).update({nombre:d.nombre.trim(),ubic:d.ubic.trim()}),'Lugar actualizado'));
+}
+
+/* ---------- piezas de vista ---------- */
+const pagoTxt={efectivo:'Efectivo',transferencia:'Transferencia',pendiente:'Por cobrar'};
+function estadoPill(m){
+  let p='';
+  if(m.estado==='pendiente')p+=' <span class="pill warn">Por autorizar</span>';
+  if(m.estado==='por_confirmar')p+=' <span class="pill warn">Por confirmar</span>';
+  if(m.estado==='rechazado')p+=' <span class="pill bad">Rechazado</span>';
+  if(m.estado==='anulado')p+=' <span class="pill bad">Anulado</span>';
+  if(m.tipo==='venta'&&m.pago==='pendiente')p+=' <span class="pill warn">Por cobrar</span>';
+  if(m.correccionEstado==='pendiente')p+=' <span class="pill">Corrección pedida</span>';
+  return p;
+}
+function movTitle(m){const t=T[m.tipo]||{n:m.tipo};if(m.tipo==='venta')return m.lugar||'Venta';if(m.tipo==='gasto'||m.tipo==='reparacion')return m.concepto||t.n;return t.n}
+function movSub(m){
+  const h=hhmm(m.ts);const p=[];
+  if(m.tipo==='venta'){if(m.litros)p.push(num(m.litros)+' L');p.push(pagoTxt[m.pago]||'')}
+  if(m.tipo==='diesel'){p.push(num(m.litros)+' L');if(has(m.dedosAntes))p.push(`${num(m.dedosAntes)}→${num(m.dedosDespues)} dedos`)}
+  if(m.tipo==='extra'){p.push(num(m.horas)+' h');if(m.motivo)p.push(m.motivo)}
+  if(m.tipo==='prestamo')p.push(m.origen==='caja'?'De la caja':'Depósito del admin');
+  if(m.tipo==='reparacion')p.push(m.pagadoPor==='caja'?'Pagó la caja':'Pagó el admin');
+  return esc([dLabel(m.fecha)+(h?' '+h:''),...p].filter(Boolean).join(' · '));
+}
+function movRow(m){
+  const t=T[m.tipo]||{e:'•'};const d=cajaDelta(m);
+  const cls=d>0?'pos':d<0?'neg':'mut';const sg=d>0?'+':d<0?'−':'';
+  const amt=m.tipo==='extra'&&m.estado==='pendiente'&&!m.monto?'—':sg+money(m.monto).replace('-','');
+  return `<div class="row tap" data-act="verMov" data-id="${esc(m.id)}"><div><div><b>${t.e} ${esc(movTitle(m))}</b>${estadoPill(m)}</div><div class="small mut">${movSub(m)}</div></div><div class="${cls} r"><b>${amt}</b>${d===0&&activo(m)&&m.tipo==='venta'?'<div class="xs mut">no entra a caja</div>':''}</div></div>`;
+}
+function mapLinks(u,l){
+  const q=(u||'').trim();let g,wz=null;const ll=q.match(/^\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/);
+  if(/^https?:\/\//i.test(q))g=q;
+  else if(ll){g=`https://www.google.com/maps/search/?api=1&query=${ll[1]},${ll[2]}`;wz=`https://waze.com/ul?ll=${ll[1]},${ll[2]}&navigate=yes`}
+  else{const t=encodeURIComponent(q||l||'');if(!t)return'';g=`https://www.google.com/maps/search/?api=1&query=${t}`;wz=`https://waze.com/ul?q=${t}&navigate=yes`}
+  return `<a class="btn sec sm" href="${esc(g)}" target="_blank" rel="noopener">📍 Cómo llegar</a>`+(wz?`<a class="btn sec sm" href="${esc(wz)}" target="_blank" rel="noopener">Waze</a>`:'');
+}
+const sortTs=(a,b)=>(b.ts||0)-(a.ts||0);
+
+/* ---------- vistas ---------- */
+function vHoyChofer(){
+  const t=today();const j=S.jornadas.find(x=>x.id===t);const w=weekState(satOf(t));
+  const [hh,mm]=cfg('horaInicio').split(':').map(Number);const now=new Date();const hIni=new Date();hIni.setHours(hh,mm,0,0);
+  let h='';
+  if(!j&&now>=hIni&&now.getDay()!==0)h+=`<div class="banner">⏰ Ya son las ${esc(cfg('horaInicio'))}. ¡Inicia tu jornada!</div>`;
+  h+=`<div class="card">`;
+  if(!j)h+=`<h3>Jornada de hoy</h3><div class="mut small" style="margin-bottom:10px">${dLabel(t)} · Entrada ${esc(cfg('horaInicio'))}</div><button class="btn block huge" data-act="jIni">☀️ Iniciar jornada</button><div class="hint center">Anota los dedos de diésel y toma foto de la varilla.</div>`;
+  else if(!j.cierre)h+=`<div class="row"><div><h3>Jornada iniciada</h3><div class="small mut">A las ${hhmm(j.inicio)} · Amaneció con ${num(j.dedosInicio)} dedos</div></div><span class="pill ok">Trabajando</span></div><button class="btn sec block" style="margin-top:8px" data-act="jFin">🌙 Cerrar jornada</button>`;
+  else h+=`<div class="row"><div><h3>Jornada cerrada</h3><div class="small mut">${hhmm(j.inicio)}–${hhmm(j.cierre)} · Quedó con ${num(j.dedosCierre)} dedos</div></div><span class="pill">Cerrada</span></div>`;
+  h+=`</div>`;
+  h+=`<div class="card"><div class="mut small">Efectivo que debes tener en caja</div><div class="big">${money(w.caja)}</div>
+    <div class="small mut">Deuda de préstamos esta semana: <b>${money(w.deudaTotal)}</b> · Corte: sábado</div></div>`;
+  h+=`<h2>Registrar</h2><div class="grid3">
+    <button class="tile" data-act="nVenta"><span class="e">💧</span>Venta</button>
+    <button class="tile" data-act="nDiesel"><span class="e">⛽</span>Diésel</button>
+    <button class="tile" data-act="nGasto"><span class="e">🧾</span>Gasto</button>
+    <button class="tile" data-act="nPrestamo"><span class="e">🤝</span>Préstamo</button>
+    <button class="tile" data-act="nExtra"><span class="e">⏱️</span>Horas extra</button>
+    <button class="tile" data-act="nDepChofer"><span class="e">📤</span>Deposité al admin</button>
+    <button class="tile" data-act="nDepAdmin"><span class="e">🏦</span>Me depositaron</button>
+    <button class="tile" data-act="nRepUrg"><span class="e">🚨</span>Falla urgente</button>
+    <button class="tile" data-act="tab" data-id="pedidos"><span class="e">📋</span>Pedidos</button></div>`;
+  const peds=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino');
+  if(peds.length)h+=`<h2>Pedidos pendientes (${peds.length})</h2>`+peds.sort(pedSort).slice(0,2).map(pedCard).join('');
+  const hoy=S.movs.filter(m=>m.fecha===t).sort(sortTs);
+  h+=`<h2>Movimientos de hoy</h2><div class="card">${hoy.length?hoy.map(movRow).join(''):'<div class="empty">Aún no hay movimientos hoy.</div>'}</div>`;
+  h+=`<div class="banner info small">💡 Pon también una alarma diaria a las ${esc(cfg('horaInicio'))} en el reloj de tu celular. La app te avisa cuando la abres, pero no puede sonar si está cerrada.</div>`;
+  return h;
+}
+function vInicioAdmin(){
+  const t=today();const j=S.jornadas.find(x=>x.id===t);const w=weekState(satOf(t));const r=weekReport(satOf(t));
+  const hoyV=S.movs.filter(m=>m.fecha===t&&m.tipo==='venta'&&vigente(m));
+  let h='';
+  const al=alertas();
+  al.forEach(a=>h+=`<div class="banner ${a.lvl==='warn'?'warn':''}" ${a.act?`data-act="tab" data-id="${a.act}" style="cursor:pointer"`:''}>${esc(a.t)}</div>`);
+  h+=`<div class="card"><div class="row"><div><h3>${esc(cfg('nombreChofer'))} · hoy</h3><div class="small mut">${
+    !j?'No ha iniciado jornada':!j.cierre?`Inició ${hhmm(j.inicio)} · ${num(j.dedosInicio)} dedos`:`${hhmm(j.inicio)}–${hhmm(j.cierre)} · cerró con ${num(j.dedosCierre)} dedos`}</div></div>
+    <span class="pill ${!j?'warn':!j.cierre?'ok':''}">${!j?'Sin iniciar':!j.cierre?'Trabajando':'Cerrada'}</span></div>
+    ${j?`<div class="btns"><button class="btn sec sm" data-act="verJornada" data-id="${t}">Ver fotos de la varilla</button></div>`:''}</div>`;
+  h+=`<div class="grid2"><div class="card"><div class="mut small">Ventas de hoy</div><div class="mid">${money(hoyV.reduce((a,m)=>a+(+m.monto||0),0))}</div><div class="small mut">${hoyV.length} viaje(s)</div></div>
+    <div class="card"><div class="mut small">Caja del chofer</div><div class="mid">${money(w.caja)}</div><div class="small mut">Préstamos: ${money(w.deudaTotal)}</div></div></div>`;
+  h+=`<div class="card" data-act="tab" data-id="semana" style="cursor:pointer"><div class="mut small">Esta semana (hasta hoy)</div>
+    <div class="kv"><span>Ingresos</span><b>${money(r.ingresos)}</b></div><div class="kv"><span>Gastos</span><b>${money(r.egresos)}</b></div>
+    <div class="kv tot"><span>Utilidad</span><span class="${r.utilidad>=0?'pos':'neg'}">${money(r.utilidad)}</span></div></div>`;
+  h+=`<h2>Acciones</h2><div class="grid3">
+    <button class="tile" data-act="nPedido"><span class="e">📋</span>Asignar pedido</button>
+    <button class="tile" data-act="nDepAdmin"><span class="e">🏦</span>Le deposité</button>
+    <button class="tile" data-act="nPrestamo"><span class="e">🤝</span>Préstamo</button>
+    <button class="tile" data-act="nExtra"><span class="e">⏱️</span>Horas extra</button>
+    <button class="tile" data-act="nGasto"><span class="e">🧾</span>Gasto</button>
+    <button class="tile" data-act="nVenta"><span class="e">💧</span>Venta</button></div>`;
+  const rec=S.movs.slice().sort(sortTs).slice(0,15);
+  h+=`<h2>Movimientos recientes</h2><div class="card">${rec.length?rec.map(movRow).join(''):'<div class="empty">Todavía no hay movimientos. Empieza asignando un pedido o cambia a "Ver como chofer" para probar.</div>'}</div>`;
+  return h;
+}
+const pedSort=(a,b)=>((a.fecha||'')+(a.hora||'')).localeCompare((b.fecha||'')+(b.hora||''));
+function pedCard(p){
+  const st={asignado:['Asignado',''],en_camino:['En camino','warn'],entregado:['Entregado','ok'],cancelado:['Cancelado','bad']}[p.estado]||['',''];
+  let b='';
+  if(p.estado==='asignado'||p.estado==='en_camino'){
+    b+=mapLinks(p.ubic,p.lugar);
+    if(!isAdmin()&&p.estado==='asignado')b+=`<button class="btn sm warn" data-act="pedCamino" data-id="${esc(p.id)}">🚚 Voy en camino</button>`;
+    b+=`<button class="btn sm ok" data-act="pedEntregar" data-id="${esc(p.id)}">✅ Entregado</button>`;
+    if(isAdmin())b+=`<button class="btn sm sec" data-act="pedCancelar" data-id="${esc(p.id)}">Cancelar</button>`;
+  }
+  return `<div class="card"><div class="row" style="padding-top:0"><div><h3>${esc(p.lugar)}</h3><div class="small mut">${dLabel(p.fecha||today())}${p.hora?' · '+esc(p.hora):''}${p.litros?' · '+num(p.litros)+' L':''}${p.precio?' · '+money(p.precio):''}</div></div><span class="pill ${st[1]}">${st[0]}</span></div>
+    ${p.notas?`<div class="small" style="margin-bottom:6px">📝 ${esc(p.notas)}</div>`:''}<div class="btns">${b}</div></div>`;
+}
+function vPedidos(){
+  let h='';
+  if(isAdmin())h+=`<button class="btn block huge" data-act="nPedido">📋 Asignar pedido</button>`;
+  const act=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino').sort(pedSort);
+  h+=`<h2>Por surtir (${act.length})</h2>`+(act.length?act.map(pedCard).join(''):'<div class="card empty">No hay pedidos pendientes.</div>');
+  const done=S.pedidos.filter(p=>p.estado==='entregado'||p.estado==='cancelado').sort((a,b)=>(b.entregadoTs||b.ts||0)-(a.entregadoTs||a.ts||0)).slice(0,10);
+  if(done.length)h+=`<h2>Últimos entregados</h2><div class="card">${done.map(p=>`<div class="row"><div><b>${esc(p.lugar)}</b><div class="small mut">${dLabel(p.fecha||today())}</div></div><span class="pill ${p.estado==='entregado'?'ok':'bad'}">${p.estado==='entregado'?'Entregado':'Cancelado'}</span></div>`).join('')}</div>`;
+  return h;
+}
+function vAutorizar(){
+  const p=pendientes();let h='';
+  if(!p.movs.length&&!p.reps.length)return `<div class="card empty" style="padding:40px 10px">✅ No tienes nada pendiente.</div>`;
+  p.movs.sort(sortTs).forEach(m=>{
+    let b='',extra='';
+    if(m.correccionEstado==='pendiente'){extra=`<div class="banner warn small" style="margin:8px 0 0">✏️ Pide corrección: ${esc(m.correccion)}</div>`;
+      b=`<button class="btn sm bad" data-act="corrAnular" data-id="${esc(m.id)}">Anular movimiento</button><button class="btn sm sec" data-act="corrOk" data-id="${esc(m.id)}">Ya lo corregí / dejar igual</button>`}
+    else if(m.estado==='por_confirmar')b=`<button class="btn sm ok" data-act="depOk" data-id="${esc(m.id)}">Sí me llegó</button><button class="btn sm bad" data-act="rechazar" data-id="${esc(m.id)}">No me llegó</button>`;
+    else if(m.tipo==='extra')b=`<button class="btn sm ok" data-act="autExtra" data-id="${esc(m.id)}">Autorizar y poner monto</button><button class="btn sm bad" data-act="rechazar" data-id="${esc(m.id)}">Rechazar</button>`;
+    else b=`<button class="btn sm ok" data-act="aprobar" data-id="${esc(m.id)}">Autorizar</button><button class="btn sm bad" data-act="rechazar" data-id="${esc(m.id)}">Rechazar</button>`;
+    h+=`<div class="card">${movRow(m)}${m.motivo&&m.tipo!=='extra'?`<div class="small">Motivo: ${esc(m.motivo)}</div>`:''}${extra}${m.foto?`<button type="button" class="btn sec sm" style="margin-top:8px" data-act="verMov" data-id="${esc(m.id)}">Ver foto</button>`:''}<div class="btns">${b}</div></div>`;
+  });
+  p.reps.forEach(r=>h+=`<div class="card"><b>🚨 Reparación urgente</b><div>${esc(r.desc)}</div><div class="small mut">${new Date(r.ts).toLocaleString('es-MX')}</div>${fotoImg(r.foto)}
+    <div class="btns"><button class="btn sm ok" data-act="repAut" data-id="${esc(r.id)}">Autorizar</button><button class="btn sm bad" data-act="repRech" data-id="${esc(r.id)}">Rechazar</button></div></div>`);
+  return h;
+}
+function reportText(sat){
+  const r=weekReport(sat),w=weekState(sat);
+  const L=[`*PIPAS CUBA – Reporte semanal*`,`${dLabel(addDays(sat,-6))} al ${dLabel(sat)}`,``,
+    `*Ingresos:* ${money(r.ingresos)}`,`  Efectivo: ${money(r.ingEf)}`,`  Transferencia: ${money(r.ingTr)}`,`  Por cobrar: ${money(r.ingPend)}`,``,
+    `*Gastos:* ${money(r.egresos)}`,`  Diésel: ${money(r.diesel)} (${num(r.dieselL)} L)`,`  Sueldos: ${money(r.sueldos)} (${r.dias} días)`,`  Horas extra: ${money(r.extras)}`,`  Reparaciones: ${money(r.repar)}`,`  Otros gastos: ${money(r.gastos)}`,``,
+    `*UTILIDAD: ${money(r.utilidad)}*`,``,`Viajes: ${r.viajes} · Agua entregada: ${num(r.litrosAgua)} L`,
+    `Efectivo en caja: ${money(w.caja)} · Préstamos: ${money(w.deudaTotal)}`];
+  return L.join('\n');
+}
+function vSemana(){
+  const sat=S.week;const w=weekState(sat);const r=weekReport(sat);const cur=satOf(today());const c=w.corte||{};
+  let h=`<div class="card wnav"><button class="btn sec sm" data-act="wPrev">‹</button><b>${dLabel(addDays(sat,-6))} – ${dLabel(sat)}</b><button class="btn sec sm" data-act="wNext" ${sat>=cur?'disabled':''}>›</button></div>`;
+  h+=`<div class="card"><div class="row" style="padding-top:0"><h3>Corte del sábado</h3><span class="pill ${w.closed?'ok':'warn'}">${w.closed?'Cerrada':'Abierta'}</span></div>
+    ${w.fondoIni?`<div class="kv"><span>Fondo que quedó de la semana pasada</span><b>${money(w.fondoIni)}</b></div>`:''}
+    <div class="kv"><span>Efectivo que debe entregar</span><b>${money(w.caja)}</b></div>
+    ${w.deudaAnt?`<div class="kv"><span>Deuda de semanas anteriores</span><b>${money(w.deudaAnt)}</b></div>`:''}
+    <div class="kv"><span>Préstamos de esta semana</span><b>${money(w.prest)}</b></div>
+    <div class="kv tot"><span>Debe pagar de préstamos</span><span>${money(w.deudaTotal)}</span></div>
+    <div class="small mut" style="margin-top:6px">Días trabajados: ${r.dias} · Sueldo cobrado: ${money(r.sueldos)} · Horas extra: ${money(r.extras)}</div>`;
+  if(w.closed)h+=`<div class="banner info small" style="margin:10px 0 0">Entregó ${money(c.recibido)} de caja y ${money(c.abono)} de préstamos.${c.fondoQueda?` Queda fondo de ${money(c.fondoQueda)}.`:''}${c.deudaPasa>0?` Pasa deuda de ${money(c.deudaPasa)}.`:''}</div>`;
+  h+=`<div class="small" style="margin-top:8px">${c.confirmChofer?'✅ El chofer confirmó el corte':'⏳ El chofer no ha confirmado'}</div><div class="btns">`;
+  if(!isAdmin()&&!c.confirmChofer)h+=`<button class="btn ok" data-act="confirmCorte">Confirmar mi corte</button>`;
+  if(isAdmin())h+=w.closed?`<button class="btn sec" data-act="reabrir">Reabrir semana</button>`:`<button class="btn" data-act="cerrar">🔒 Cerrar semana</button>`;
+  h+=`</div></div>`;
+  if(isAdmin()){
+    h+=`<div class="card"><h3>Resultados</h3>
+      <div class="kv"><span>💧 Ventas en efectivo</span><b>${money(r.ingEf)}</b></div>
+      <div class="kv"><span>💧 Ventas por transferencia</span><b>${money(r.ingTr)}</b></div>
+      <div class="kv"><span>💧 Ventas por cobrar</span><b>${money(r.ingPend)}</b></div>
+      <div class="kv"><span><b>Ingresos</b></span><b>${money(r.ingresos)}</b></div>
+      <div class="kv"><span>⛽ Diésel</span><span class="neg">${money(r.diesel)}</span></div>
+      <div class="kv"><span>👷 Sueldos (${r.dias} días)</span><span class="neg">${money(r.sueldos)}</span></div>
+      <div class="kv"><span>⏱️ Horas extra</span><span class="neg">${money(r.extras)}</span></div>
+      <div class="kv"><span>🔧 Reparaciones</span><span class="neg">${money(r.repar)}</span></div>
+      <div class="kv"><span>🧾 Otros gastos</span><span class="neg">${money(r.gastos)}</span></div>
+      <div class="kv tot"><span>Utilidad</span><span class="${r.utilidad>=0?'pos':'neg'}">${money(r.utilidad)}</span></div></div>`;
+    const km=+c.kmZeek||0;
+    h+=`<div class="card"><h3>Operación</h3><div class="grid2">
+      <div><div class="mut small">Viajes</div><div class="mid">${r.viajes}</div></div>
+      <div><div class="mut small">Agua entregada</div><div class="mid">${num(r.litrosAgua)} L</div></div>
+      <div><div class="mut small">Promedio por viaje</div><div class="mid">${r.viajes?money(r.ingresos/r.viajes):'—'}</div></div>
+      <div><div class="mut small">Por cada 1,000 L</div><div class="mid">${r.litrosAgua?money(r.ingresos/r.litrosAgua*1000):'—'}</div></div>
+      <div><div class="mut small">Diésel cargado</div><div class="mid">${num(r.dieselL)} L</div></div>
+      <div><div class="mut small">Rendimiento</div><div class="mid">${km&&r.dieselL?num(km/r.dieselL)+' km/L':'—'}</div>${!km?'<div class="xs mut">Pon los km de Zeek al cerrar</div>':''}</div></div></div>`;
+    const L=lpd();
+    let rows='';for(let i=6;i>=0;i--){const f=addDays(sat,-i);if(f>today())continue;const d=dedosDia(f);if(!d.j&&!d.cargas.length)continue;
+      const bad=d.noche!==null&&d.noche>=(+cfg('umbralDedos')||0.5);
+      rows+=`<tr class="${bad?'alert':''}" data-act="verJornada" data-id="${f}" style="cursor:pointer"><td>${dLabel(f)}</td><td>${d.ini!==null?num(d.ini):'—'}</td><td>${d.subio?'+'+num(d.subio):'—'}</td><td>${d.fin!==null?num(d.fin):'—'}</td><td>${d.consumo!==null?num(d.consumo):'—'}</td><td>${d.noche===null?'—':bad?'⚠️ −'+num(d.noche):d.noche>0?'−'+num(d.noche):'0'}</td></tr>`}
+    h+=`<div class="card"><h3>Diésel en dedos</h3>${rows?`<div style="overflow-x:auto"><table><tr><th>Día</th><th>Amaneció</th><th>Cargó</th><th>Cerró</th><th>Gastó</th><th>Noche</th></tr>${rows}</table></div>`:'<div class="empty">Sin registros de dedos esta semana.</div>'}
+      <div class="hint">"Noche" = cuánto bajó entre el cierre del día anterior y la mañana. ${L?`1 dedo ≈ ${num(L.v)} L${L.manual?'':' (calculado)'}.`:''} Toca un día para ver las fotos.</div></div>`;
+    if(r.porLugar.length)h+=`<div class="card"><h3>Ventas por lugar</h3><div style="overflow-x:auto"><table><tr><th>Lugar</th><th>Viajes</th><th>Litros</th><th>Total</th></tr>${r.porLugar.map(p=>`<tr><td>${esc(p.n)}</td><td>${p.v}</td><td>${num(p.l)}</td><td>${money(p.$)}</td></tr>`).join('')}</table></div></div>`;
+    h+=`<div class="btns"><button class="btn sec" data-act="copiar">📋 Copiar reporte</button><a class="btn ok" href="https://wa.me/?text=${encodeURIComponent(reportText(sat))}" target="_blank" rel="noopener">Enviar por WhatsApp</a></div>`;
+  }
+  const ms=S.movs.filter(m=>inWeek(m.fecha,sat)).sort(sortTs);
+  h+=`<h2>Movimientos de la semana (${ms.length})</h2><div class="card">${ms.length?ms.map(movRow).join(''):'<div class="empty">Sin movimientos.</div>'}</div>`;
+  return h;
+}
+function repRow(r){
+  const t=today();let pill='';
+  if(r.estado==='programada'){pill=r.fechaProg<t?'<span class="pill bad">Vencido</span>':r.fechaProg<=addDays(t,7)?'<span class="pill warn">Próximo</span>':'<span class="pill">Programado</span>'}
+  else pill={solicitada:'<span class="pill warn">Por autorizar</span>',autorizada:'<span class="pill ok">Autorizada</span>',hecha:'<span class="pill ok">Hecha</span>',rechazada:'<span class="pill bad">Rechazada</span>'}[r.estado]||'';
+  const sub=r.estado==='hecha'?`${dLabel(r.fechaHecha||t)} · ${money(r.costo)} · ${r.pagadoPor==='caja'?'pagó la caja':'pagó el admin'}`:r.tipo==='rutinaria'?`Para el ${dLabel(r.fechaProg)}${r.intervaloDias?' · cada '+r.intervaloDias+' días':''}`:new Date(r.ts).toLocaleDateString('es-MX');
+  let b='';
+  if(r.estado==='autorizada'||r.estado==='programada')b+=`<button class="btn sm ok" data-act="repHecha" data-id="${esc(r.id)}">Marcar hecha</button>`;
+  if(isAdmin()&&r.estado==='solicitada')b+=`<button class="btn sm ok" data-act="repAut" data-id="${esc(r.id)}">Autorizar</button><button class="btn sm bad" data-act="repRech" data-id="${esc(r.id)}">Rechazar</button>`;
+  if(isAdmin()&&r.estado!=='hecha')b+=`<button class="btn sm sec" data-act="repDel" data-id="${esc(r.id)}">Borrar</button>`;
+  return `<div class="card"><div class="row" style="padding:0"><div><b>${r.tipo==='urgente'?'🚨':'🗓️'} ${esc(r.desc)}</b><div class="small mut">${esc(sub)}</div></div>${pill}</div>${r.estado!=='hecha'&&r.foto?fotoImg(r.foto):''}${b?`<div class="btns">${b}</div>`:''}</div>`;
+}
+function vTaller(){
+  let h=`<div class="grid2"><button class="btn bad" data-act="nRepUrg">🚨 Falla urgente</button>${isAdmin()?'<button class="btn" data-act="nRepRut">🗓️ Programar mantenimiento</button>':''}</div>`;
+  const urg=S.reps.filter(r=>r.tipo==='urgente'&&(r.estado==='solicitada'||r.estado==='autorizada')).sort(sortTs);
+  const rut=S.reps.filter(r=>r.tipo==='rutinaria'&&r.estado==='programada').sort((a,b)=>(a.fechaProg||'').localeCompare(b.fechaProg||''));
+  const hist=S.reps.filter(r=>r.estado==='hecha'||r.estado==='rechazada').sort((a,b)=>(b.fechaHecha||'').localeCompare(a.fechaHecha||'')||sortTs(a,b)).slice(0,12);
+  h+=`<h2>Urgentes abiertas</h2>`+(urg.length?urg.map(repRow).join(''):'<div class="card empty">Ninguna 👍</div>');
+  h+=`<h2>Mantenimiento programado</h2>`+(rut.length?rut.map(repRow).join(''):`<div class="card empty">${isAdmin()?'Programa el cambio de aceite, llantas, filtros, revisión de bomba…':'Sin mantenimientos programados.'}</div>`);
+  if(hist.length)h+=`<h2>Historial</h2>`+hist.map(repRow).join('');
+  return h;
+}
+function vAjustes(){
+  const L=lpd();
+  let h=`<div class="card"><h3>Configuración</h3>
+    <div class="kv"><span>Chofer</span><b>${esc(cfg('nombreChofer'))}</b></div>
+    <div class="kv"><span>Sueldo diario</span><b>${money(cfg('sueldo'))}</b></div>
+    <div class="kv"><span>Inicio de jornada</span><b>${esc(cfg('horaInicio'))}</b></div>
+    <div class="kv"><span>Litros por dedo</span><b>${L?num(L.v)+' L'+(L.manual?'':' (auto)'):'Sin datos aún'}</b></div>
+    <div class="kv"><span>Alerta nocturna desde</span><b>${num(cfg('umbralDedos'))} dedo(s)</b></div>
+    <button class="btn block" style="margin-top:10px" data-act="ajustes">Editar ajustes</button></div>`;
+  h+=`<h2>Lugares guardados (${S.lugares.length})</h2><div class="card">${S.lugares.length?S.lugares.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(l=>`<div class="row tap" data-act="editLugar" data-id="${esc(l.id)}"><div><b>${esc(l.nombre)}</b><div class="small mut">${l.ubic?'📍 Con ubicación':'Sin ubicación'}</div></div><span class="mut">›</span></div>`).join(''):'<div class="empty">Se guardan solos al registrar ventas o pedidos.</div>'}</div>`;
+  h+=`<h2>Usuarios</h2><div class="card">${S.roles.map(r=>`<div class="row"><div><b>${esc(r.nombre||r.email)}</b><div class="small mut">${esc(r.email)} · ${r.role==='admin'?'Administrador':'Chofer'}</div></div>${r.email!==S.email?`<button class="btn sm sec" data-act="delUser" data-id="${esc(r.email)}">Quitar</button>`:''}</div>`).join('')||'<div class="empty">Sin usuarios</div>'}
+    <button class="btn block" style="margin-top:10px" data-act="addUser">+ Dar acceso a un usuario</button></div>`;
+  h+=`<div class="card"><h3>Cómo darle acceso al chofer</h3><div class="small">1. En <b>Supabase → Authentication → Users → Add user</b>, crea su correo y contraseña (marca <i>Auto Confirm User</i>).<br>2. Aquí arriba toca <b>Dar acceso</b> con ese mismo correo, como <b>Chofer</b>.<br>3. Pásale la dirección de la app y su contraseña. En su celular: menú del navegador → <b>Agregar a pantalla de inicio</b>.</div></div>
+    <button class="btn sec block" data-act="logout">Cerrar sesión (${esc(S.email)})</button>`;
+  return h;
+}
+
+/* ---------- render ---------- */
+const TABS_ADMIN=[['inicio','🏠','Inicio'],['pedidos','📋','Pedidos'],['autorizar','✅','Autorizar'],['semana','📊','Semana'],['taller','🔧','Taller']];
+const TABS_CHOFER=[['hoy','☀️','Hoy'],['pedidos','📋','Pedidos'],['semana','📊','Mi semana'],['taller','🔧','Taller']];
+let rq=false;
+function render(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;draw()})}
+function draw(){
+  S.memo={};
+  const fs=S.movs.map(m=>m.fecha).filter(Boolean).sort();S.firstSat=fs.length?satOf(fs[0]):null;
+  const adm=isAdmin();
+  if(S.noconfig||S.login||S.norole){$('#role').textContent='';$('#nav').innerHTML='';
+    $('#hbtns').innerHTML=S.norole?'<button class="chip" data-act="logout">Salir</button>':'';
+    $('#main').innerHTML=S.noconfig?`<div class="card center" style="margin-top:30px"><h3>Falta configurar</h3><p class="mut">La app todavía no está conectada a su base de datos.</p></div>`
+      :S.norole?`<div class="card center" style="margin-top:30px"><h3>Sin acceso</h3><p class="mut">Tu usuario (${esc(S.email)}) todavía no tiene permiso. Pídele al administrador que lo agregue en Ajustes → Usuarios.</p></div>`:vLogin();
+    return}
+  $('#role').textContent=(adm?'Administrador':S.isOwner?'Chofer (vista de prueba)':cfg('nombreChofer'))+' · '+dLabel(today());
+  const chips=[];
+  if(S.installEvt)chips.push('<button class="chip" data-act="install">Instalar</button>');
+  if(S.isOwner)chips.push(`<button class="chip" data-act="toggleView">${adm?'Ver como chofer':'Ver como admin'}</button>`);
+  if(adm)chips.push('<button class="chip" data-act="tab" data-id="ajustes" aria-label="Ajustes">⚙</button>');
+  if(!S.isOwner)chips.push('<button class="chip" data-act="logout">Salir</button>');
+  $('#hbtns').innerHTML=S.loaded?chips.join(''):'';
+  const tabs=adm?TABS_ADMIN:TABS_CHOFER;
+  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes'].includes(S.tab))||(S.tab==='ajustes'&&!adm))S.tab=tabs[0][0];
+  if(!S.loaded){$('#main').innerHTML=`<div class="load">${S.slow?'La conexión está lenta. Seguimos intentando…':'Cargando datos…'}</div>`;$('#nav').innerHTML='';return}
+  const np=adm?nPend():0;const npe=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino').length;
+  $('#nav').innerHTML=tabs.map(([k,i,n])=>{const bd=k==='autorizar'&&np?np:k==='pedidos'&&!adm&&npe?npe:0;return `<button class="${S.tab===k?'on':''}" data-act="tab" data-id="${k}"><span class="ic">${i}</span>${n}${bd?`<span class="badge">${bd}</span>`:''}</button>`}).join('');
+  const V={hoy:vHoyChofer,inicio:vInicioAdmin,pedidos:vPedidos,autorizar:vAutorizar,semana:vSemana,taller:vTaller,ajustes:vAjustes};
+  let html='';try{html=(V[S.tab]||V.inicio)()}catch(e){console.error(e);html='<div class="card">Ocurrió un error al mostrar esta sección.</div>'}
+  if(S.err)html=`<div class="banner warn small">Problema de conexión: algunos datos pueden no estar actualizados.</div>`+html;
+  $('#main').innerHTML=html;
+}
+
+/* ---------- acciones ---------- */
+const findMov=id=>S.movs.find(m=>m.id===id);
+const ACT={
+  closeSheet,
+  install:()=>{const e=S.installEvt;if(!e)return;S.installEvt=null;e.prompt();render()},
+  logout:async()=>{try{await sb.auth.signOut()}catch(e){}location.reload()},
+  addUser:()=>sheet('👤 Dar acceso',`${fIn('email','Correo (el mismo que creaste en Supabase)','type="email" required')}${fIn('nombre','Nombre')}${fSeg('role','Rol',[['chofer','Chofer'],['admin','Administrador']],'chofer')}`,
+    async d=>{const ok=await save(sb.from('roles').upsert({email:d.email.trim().toLowerCase(),role:d.role,nombre:d.nombre.trim()}).then(r=>{if(r.error)throw r.error}),'Acceso agregado');if(ok){await loadRoles();render()}return ok}),
+  delUser:async d=>{if(await save(sb.from('roles').delete().eq('email',d.id).then(r=>{if(r.error)throw r.error}),'Acceso quitado')){await loadRoles();render()}},
+  tab:d=>{S.tab=d.id;window.scrollTo(0,0);render()},
+  toggleView:()=>{S.view=S.view==='admin'?'chofer':'admin';S.tab=null;try{localStorage.setItem('pc_view',S.view)}catch(e){};window.scrollTo(0,0);render()},
+  nVenta:()=>fVenta(),nDiesel:fDiesel,nGasto:fGasto,nPrestamo:fPrestamo,nExtra:fExtra,nDepChofer:fDepChofer,nDepAdmin:fDepAdmin,nPedido:fPedido,nRepUrg:fRepUrg,nRepRut:fRepRut,
+  jIni:fJornadaIni,jFin:fJornadaFin,ajustes:fAjustes,
+  editLugar:d=>{const l=S.lugares.find(x=>x.id===d.id);if(l)fLugar(l)},
+  delLugar:async d=>{if(await save(col('lugares').doc(d.id).delete(),'Lugar borrado'))closeSheet()},
+  wPrev:()=>{S.week=addDays(S.week,-7);render()},
+  wNext:()=>{const c=satOf(today());if(S.week<c)S.week=addDays(S.week,7);render()},
+  pedCamino:d=>save(col('pedidos').doc(d.id).update({estado:'en_camino'}),'Marcado en camino'),
+  pedEntregar:d=>{const p=S.pedidos.find(x=>x.id===d.id);if(p)fVenta({lugar:p.lugar,litros:p.litros||'',monto:p.precio||'',ubic:p.ubic||'',pedidoId:p.id})},
+  pedCancelar:d=>save(col('pedidos').doc(d.id).update({estado:'cancelado'}),'Pedido cancelado'),
+  aprobar:d=>updMov(d.id,{estado:'ok',autorizadoTs:Date.now()}).then(o=>o&&toast('Autorizado')),
+  rechazar:d=>updMov(d.id,{estado:'rechazado'}).then(o=>o&&toast('Rechazado')),
+  depOk:d=>updMov(d.id,{estado:'ok',confirmadoTs:Date.now()}).then(o=>o&&toast('Depósito confirmado')),
+  autExtra:d=>{const m=findMov(d.id);if(m)fAutExtra(m)},
+  corrAnular:d=>updMov(d.id,{estado:'anulado',correccionEstado:'resuelta'}).then(o=>o&&toast('Movimiento anulado. Pídele que lo registre bien.')),
+  corrOk:d=>updMov(d.id,{correccionEstado:'resuelta'}),
+  repAut:d=>save(col('reparaciones').doc(d.id).update({estado:'autorizada'}),'Reparación autorizada'),
+  repRech:d=>save(col('reparaciones').doc(d.id).update({estado:'rechazada'}),'Reparación rechazada'),
+  repDel:d=>save(col('reparaciones').doc(d.id).delete(),'Borrado'),
+  repHecha:d=>{const r=S.reps.find(x=>x.id===d.id);if(r)fRepHecha(r)},
+  cerrar:()=>fCerrar(S.week),
+  reabrir:()=>save(col('cortes').doc(S.week).update({cerrado:false}),'Semana reabierta'),
+  confirmCorte:async()=>{const ex=S.cortes.find(x=>x.id===S.week);const ref=col('cortes').doc(S.week);
+    await save(ex?ref.update({confirmChofer:true,confirmChoferTs:Date.now()}):ref.set({confirmChofer:true,confirmChoferTs:Date.now(),cerrado:false}),'Corte confirmado')},
+  copiar:async()=>{try{await navigator.clipboard.writeText(reportText(S.week));toast('Reporte copiado')}catch(e){toast('No se pudo copiar; usa el botón de WhatsApp')}},
+  cobrar:d=>{const m=findMov(d.id);if(m)fCobrar(m)},
+  pedirCorr:d=>{const m=findMov(d.id);if(m)fCorreccion(m)},
+  anular:async d=>{if(await updMov(d.id,{estado:'anulado'})){toast('Movimiento anulado');closeSheet()}},
+  verJornada:d=>{const j=S.jornadas.find(x=>x.id===d.id);if(!j){toast('No hay jornada ese día');return}
+    sheet('⛽ Varilla · '+dLabel(d.id),`<div class="kv"><span>Amaneció (${hhmm(j.inicio)})</span><b>${has(j.dedosInicio)?num(j.dedosInicio)+' dedos':'—'}</b></div>${fotoImg(j.fotoInicio)}
+      <div class="kv" style="margin-top:10px"><span>Cerró (${hhmm(j.cierre)||'—'})</span><b>${has(j.dedosCierre)?num(j.dedosCierre)+' dedos':'—'}</b></div>${fotoImg(j.fotoCierre)}`,null)},
+  verMov:d=>{const m=findMov(d.id);if(!m)return;const t=T[m.tipo]||{n:m.tipo,e:''};
+    const rows=[['Fecha',dLabel(m.fecha)+' '+hhmm(m.ts)],['Monto',money(m.monto)]];
+    if(m.tipo==='venta')rows.push(['Lugar',m.lugar],['Litros',num(m.litros)],['Pago',pagoTxt[m.pago]],...(m.fechaCobro?[['Cobrado',dLabel(m.fechaCobro)]]:[]));
+    if(m.tipo==='diesel')rows.push(['Litros',num(m.litros)],['Dedos',`${num(m.dedosAntes)} → ${num(m.dedosDespues)}`]);
+    if(m.tipo==='extra')rows.push(['Horas',num(m.horas)]);
+    if(m.tipo==='prestamo')rows.push(['Origen',m.origen==='caja'?'Caja':'Depósito del admin']);
+    if(m.concepto)rows.push(['Concepto',m.concepto]);if(m.motivo)rows.push(['Motivo',m.motivo]);if(m.nota)rows.push(['Nota',m.nota]);
+    rows.push(['Registró',m.por==='admin'?'Administrador':m.por==='sistema'?'Automático':'Chofer'],['Efecto en caja',money(cajaDelta(m))]);
+    let b='';
+    if(m.tipo==='venta'&&m.pago==='pendiente'&&vigente(m))b+=`<button type="button" class="btn ok" data-act="cobrar" data-id="${esc(m.id)}">💵 Marcar cobrado</button>`;
+    if(!isAdmin()&&vigente(m)&&m.correccionEstado!=='pendiente')b+=`<button type="button" class="btn sec" data-act="pedirCorr" data-id="${esc(m.id)}">✏️ Pedir corrección</button>`;
+    if(isAdmin()&&m.estado!=='anulado')b+=`<button type="button" class="btn bad" data-act="anular" data-id="${esc(m.id)}">Anular</button>`;
+    sheet(`${t.e} ${esc(movTitle(m))}`,`<div>${estadoPill(m)}</div>${rows.map(([k,v])=>`<div class="kv"><span class="mut">${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}
+      ${m.correccion?`<div class="banner warn small" style="margin-top:10px">✏️ ${esc(m.correccion)}</div>`:''}${fotoImg(m.foto)}<div class="btns">${b}</div>`,null)}
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const f=ACT[b.dataset.act];if(!f)return;
+  if(b.tagName==='A')return;e.preventDefault();f(b.dataset)});
+
+/* ---------- conexión (Supabase) ---------- */
+const CFG=window.PIPAS_CONFIG||{};
+let sb=null;
+const uid=()=>(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,12));
+const RAW={};
+const COLKEY={movs:'movs',pedidos:'pedidos',jornadas:'jornadas',reparaciones:'reps',cortes:'cortes',lugares:'lugares'};
+function sync(c){if(c==='config'){S.config=(RAW.config&&RAW.config.general)||{};return}const k=COLKEY[c];if(!k)return;S[k]=Object.entries(RAW[c]||{}).map(([id,d])=>Object.assign({},d,{id}))}
+function setLocal(c,id,data){RAW[c]=RAW[c]||{};if(data===null)delete RAW[c][id];else RAW[c][id]=data;sync(c)}
+const DB={
+  doc(path){const[c,i]=path.split('/');return DB.collection(c).doc(i)},
+  collection(c){return{doc(id){id=id||uid();return{id,
+    async set(d){const{error}=await sb.from('docs').upsert({col:c,id,data:d});if(error)throw error;setLocal(c,id,d);render()},
+    async update(d){const{error}=await sb.rpc('doc_merge',{p_col:c,p_id:id,p_patch:d});if(error)throw error;setLocal(c,id,Object.assign({},(RAW[c]||{})[id]||{},d));render()},
+    async delete(){const{error}=await sb.from('docs').delete().eq('col',c).eq('id',id);if(error)throw error;setLocal(c,id,null);render()}}}}}
+};
+async function loadAll(){
+  const all=[];
+  for(let from=0;;from+=1000){const{data,error}=await sb.from('docs').select('col,id,data').order('col').order('id').range(from,from+999);if(error)throw error;all.push(...data);if(data.length<1000)break}
+  for(const k in RAW)delete RAW[k];
+  all.forEach(r=>{RAW[r.col]=RAW[r.col]||{};RAW[r.col][r.id]=r.data||{}});
+  ['config',...Object.keys(COLKEY)].forEach(sync);
+}
+async function loadRoles(){const{data}=await sb.from('roles').select('email,role,nombre').order('role');S.roles=data||[]}
+let started=false;
+async function afterLogin(session){
+  S.login=false;S.email=(session.user.email||'').toLowerCase();render();
+  const{data,error}=await sb.from('roles').select('role,nombre').eq('email',S.email).maybeSingle();
+  if(error||!data){S.norole=true;render();return}
+  S.role=data.role;S.isOwner=data.role==='admin';if(!S.isOwner)S.view='chofer';
+  S.db=true;S.assets=true;
+  const timer=setTimeout(()=>{if(!S.loaded){S.slow=true;render()}},10000);
+  try{await loadAll();if(S.isOwner)await loadRoles();S.err=false}catch(e){console.error(e);S.err=true}
+  S.loaded=true;clearTimeout(timer);render();
+  if(started)return;started=true;
+  sb.channel('docs-rt').on('postgres_changes',{event:'*',schema:'public',table:'docs'},p=>{
+    if(p.eventType==='DELETE'){if(p.old&&p.old.col)setLocal(p.old.col,p.old.id,null)}
+    else if(p.new&&p.new.col)setLocal(p.new.col,p.new.id,p.new.data||{});
+    render()}).subscribe();
+  document.addEventListener('visibilitychange',async()=>{if(document.visibilityState!=='visible')return;try{await loadAll();S.err=false}catch(e){S.err=true}render()});
+  setInterval(render,60000);
+}
+function vLogin(){return `<div style="max-width:420px;margin:24px auto"><div class="center" style="margin-bottom:14px"><img src="icon.svg" alt="" style="width:120px"></div>
+  <form class="card" id="loginF"><h3 class="center">Iniciar sesión</h3>
+  <label class="l">Correo</label><input name="email" type="email" autocomplete="username" required>
+  <label class="l">Contraseña</label><input name="password" type="password" autocomplete="current-password" required>
+  <button class="btn block huge" style="margin-top:16px" type="submit">Entrar</button></form></div>`}
+document.addEventListener('submit',async e=>{
+  if(!e.target||e.target.id!=='loginF')return;e.preventDefault();
+  const f=e.target,b=f.querySelector('button');b.disabled=true;b.textContent='Entrando…';
+  const{data,error}=await sb.auth.signInWithPassword({email:f.email.value.trim(),password:f.password.value});
+  if(error){toast('Correo o contraseña incorrectos');b.disabled=false;b.textContent='Entrar';return}
+  await afterLogin(data.session);
+});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();S.installEvt=e;if(S.loaded)render()});
+async function init(){
+  render();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if(!CFG.url||!CFG.key||!window.supabase){S.noconfig=true;render();return}
+  sb=window.supabase.createClient(CFG.url,CFG.key);
+  try{const{data:{session}}=await sb.auth.getSession();if(!session){S.login=true;render();return}await afterLogin(session)}
+  catch(e){console.error(e);S.login=true;render()}
+}
+init();
+</script>
+</body>
+</html>
