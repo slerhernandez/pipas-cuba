@@ -247,10 +247,10 @@ async function upsertLugar(nombre,ubic){
   else if(ubic&&ubic!==ex.ubic)await save(col('lugares').doc(id).update({ubic}));
 }
 async function comprimir(file){
-  try{const bmp=await createImageBitmap(file);const s=Math.min(1,1400/Math.max(bmp.width,bmp.height));
+  try{const bmp=await createImageBitmap(file);const s=Math.min(1,1024/Math.max(bmp.width,bmp.height));
     const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);
     c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
-    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.72));if(b)return{blob:b,type:'image/jpeg'}}catch(e){}
+    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.6));if(b)return{blob:b,type:'image/jpeg'}}catch(e){}
   const ok=['image/jpeg','image/png','image/webp'];return ok.includes(file.type)?{blob:file,type:file.type}:null;
 }
 async function subirFoto(file){
@@ -280,7 +280,7 @@ const fIn=(name,label,attrs='',hint='')=>`<label class="l">${label}</label><inpu
 const fNum=(name,label,attrs='',hint='')=>fIn(name,label,`type="number" inputmode="decimal" step="any" ${attrs}`,hint);
 const fArea=(name,label,ph='')=>`<label class="l">${label}</label><textarea name="${name}" placeholder="${esc(ph)}"></textarea>`;
 const fSeg=(name,label,opts,val)=>`<label class="l">${label}</label><div class="seg">${opts.map(([v,t])=>`<label><input type="radio" name="${name}" value="${v}" ${v===val?'checked':''}><span>${t}</span></label>`).join('')}</div>`;
-const fFoto=(label,req)=>S.assets?`<label class="l">${label}${req?'':' (opcional)'}</label><input type="file" name="foto" accept="image/*" capture="environment" ${req?'required':''}>`:`<div class="hint" style="margin-top:12px">📷 Las fotos no están disponibles en este dispositivo.</div>`;
+const fFoto=(label,req)=>S.assets?`<label class="l">${label}${req?'':' (opcional)'}</label><input type="file" name="foto" accept="image/*" ${req?'required':''}>`:`<div class="hint" style="margin-top:12px">📷 Las fotos no están disponibles en este dispositivo.</div>`;
 const fFecha=()=>isAdmin()?fIn('fecha','Fecha',`type="date" value="${today()}"`):'';
 const dlLugares=()=>`<datalist id="dlL">${S.lugares.map(l=>`<option value="${esc(l.nombre)}">`).join('')}</datalist>`;
 function lugarMount(f){const i=f.querySelector('[name=lugar]'),u=f.querySelector('[name=ubic]');if(!i||!u)return;
@@ -310,7 +310,7 @@ function fVenta(pre={}){
 function fDiesel(){
   sheet('⛽ Cargar diésel',`<div class="grid2"><div>${fNum('monto','Monto ($)','required')}</div><div>${fNum('litros','Litros','required')}</div></div>
     <div class="grid2"><div>${fNum('dedosAntes','Dedos antes de cargar','step="0.5" required')}</div><div>${fNum('dedosDespues','Dedos después','step="0.5" required')}</div></div>
-    <div class="hint">Mide con la varilla antes y después de cargar.</div>${fFoto('Foto del ticket (para facturar)',true)}${fFecha()}`,
+    <div class="hint">Mide con la varilla antes y después de cargar.</div>${fFoto('Foto del ticket (para facturar)',false)}${fFecha()}`,
   async d=>{const foto=await subirFoto(d.foto);
     return addMov({tipo:'diesel',monto:+d.monto,litros:+d.litros,dedosAntes:+d.dedosAntes,dedosDespues:+d.dedosDespues,foto,fecha:d.fecha||today()}).then(ok=>{if(ok)toast('Diésel registrado');return ok})});
 }
@@ -356,7 +356,7 @@ function fPedido(){
     if(ok){await upsertLugar(lugar,(d.ubic||'').trim());toast('Pedido asignado')}return ok},{mount:lugarMount});
 }
 function fJornadaIni(){
-  sheet('☀️ Iniciar jornada',`${fNum('dedos','¿Cuántos dedos de diésel tiene el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',true)}
+  sheet('☀️ Iniciar jornada',`${fNum('dedos','¿Cuántos dedos de diésel tiene el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',false)}
     <div class="banner info" style="margin-top:12px">Al iniciar se registra tu sueldo del día: <b>${money(cfg('sueldo'))}</b>, que tomas de la caja.</div>`,
   async d=>{const f=today();const foto=await subirFoto(d.foto);
     const ok=await save(col('jornadas').doc(f).set({inicio:Date.now(),dedosInicio:+d.dedos,fotoInicio:foto}));
@@ -365,7 +365,7 @@ function fJornadaIni(){
     toast('¡Jornada iniciada! Buen día');},{btn:'Iniciar jornada'});
 }
 function fJornadaFin(){
-  sheet('🌙 Cerrar jornada',`${fNum('dedos','¿Con cuántos dedos de diésel queda el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',true)}`,
+  sheet('🌙 Cerrar jornada',`${fNum('dedos','¿Con cuántos dedos de diésel queda el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',false)}`,
   async d=>{const foto=await subirFoto(d.foto);
     return save(col('jornadas').doc(today()).update({cierre:Date.now(),dedosCierre:+d.dedos,fotoCierre:foto}),'Jornada cerrada. ¡Descansa!')},{btn:'Cerrar jornada'});
 }
@@ -478,7 +478,7 @@ function vHoyChofer(){
   S.movs.filter(m=>m.tipo==='venta'&&vigente(m)&&m.pago==='pendiente'&&m.creditoEstado==='rechazado').forEach(m=>{
     h+=`<div class="banner">🚫 El administrador NO aceptó el crédito: cobra <b>${money(m.monto)}</b> en ${esc(m.lugar)} (${dLabel(m.fecha)}).<div class="btns"><button class="btn sm sec" data-act="cobrar" data-id="${esc(m.id)}">Ya lo cobré</button></div></div>`});
   h+=`<div class="card">`;
-  if(!j)h+=`<h3>Jornada de hoy</h3><div class="mut small" style="margin-bottom:10px">${dLabel(t)} · Entrada ${esc(cfg('horaInicio'))}</div><button class="btn block huge" data-act="jIni">☀️ Iniciar jornada</button><div class="hint center">Anota los dedos de diésel y toma foto de la varilla.</div>`;
+  if(!j)h+=`<h3>Jornada de hoy</h3><div class="mut small" style="margin-bottom:10px">${dLabel(t)} · Entrada ${esc(cfg('horaInicio'))}</div><button class="btn block huge" data-act="jIni">☀️ Iniciar jornada</button><div class="hint center">Anota los dedos de diésel (la foto de la varilla es opcional).</div>`;
   else if(!j.cierre)h+=`<div class="row"><div><h3>Jornada iniciada</h3><div class="small mut">A las ${hhmm(j.inicio)} · Amaneció con ${num(j.dedosInicio)} dedos</div></div><span class="pill ok">Trabajando</span></div><button class="btn sec block" style="margin-top:8px" data-act="jFin">🌙 Cerrar jornada</button>`;
   else h+=`<div class="row"><div><h3>Jornada cerrada</h3><div class="small mut">${hhmm(j.inicio)}–${hhmm(j.cierre)} · Quedó con ${num(j.dedosCierre)} dedos</div></div><span class="pill">Cerrada</span></div>`;
   h+=`</div>`;
