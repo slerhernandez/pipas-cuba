@@ -85,6 +85,11 @@ tr.alert td{background:#fdeeee}
 .wnav b{text-align:center;flex:1}
 #toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#0d2233;color:#fff;padding:11px 16px;border-radius:12px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30;max-width:90vw;text-align:center;font-weight:600}
 #toast.on{opacity:1}
+.gsec{border-radius:12px;padding:8px 12px;font-weight:800;font-size:15px;letter-spacing:.5px;display:flex;justify-content:space-between;margin-top:6px}
+.gsec.in{background:#dcf2e5;color:#165f36}.gsec.out{background:#fde1e1;color:#9b1c1c}.gsec.oth{background:#eef3f7;color:var(--mut)}
+.gh{display:flex;justify-content:space-between;font-weight:700;padding:9px 0 4px;border-bottom:1px solid var(--line)}
+.gl{display:flex;justify-content:space-between;gap:10px;padding:5px 0 5px 14px;font-size:15px;cursor:pointer}
+.gl span:first-child{color:var(--ink)}
 .empty{text-align:center;color:var(--mut);padding:18px 6px}
 .center{text-align:center}
 .load{padding:60px 20px;text-align:center;color:var(--mut)}
@@ -184,7 +189,7 @@ function weekReport(sat){
     ingresos:sum(ventas),diesel:sum(act('diesel')),dieselL:act('diesel').reduce((a,m)=>a+(+m.litros||0),0),
     sueldos:sum(act('sueldo')),extras:sum(act('extra')),gastos:sum(act('gasto')),repar:sum(act('reparacion')),
     viajes:ventas.length,litrosAgua:ventas.reduce((a,m)=>a+(+m.litros||0),0),
-    dias:S.jornadas.filter(j=>inWeek(j.id,sat)).length};
+    dias:S.jornadas.filter(j=>inWeek(j.id,sat)&&j.inicio&&!j.noTrabajado).length,diasNT:S.jornadas.filter(j=>inWeek(j.id,sat)&&j.noTrabajado).length};
   r.egresos=r.diesel+r.sueldos+r.extras+r.gastos+r.repar;r.utilidad=r.ingresos-r.egresos;
   const pl={};ventas.forEach(m=>{const k=m.lugar||'—';pl[k]=pl[k]||{n:k,v:0,l:0,$:0};pl[k].v++;pl[k].l+=(+m.litros||0);pl[k].$+=(+m.monto||0)});
   r.porLugar=Object.values(pl).sort((a,b)=>b.$-a.$);
@@ -217,6 +222,18 @@ function pendientes(){
   const a=[];
   S.movs.forEach(m=>{if(m.estado==='pendiente'||m.estado==='por_confirmar'||m.correccionEstado==='pendiente'||(vigente(m)&&(m.precioEstado==='por_revisar'||m.creditoEstado==='por_autorizar')))a.push(m)});
   return{movs:a,reps:S.reps.filter(r=>r.estado==='solicitada')};
+}
+function tuDia(f){const s=S.movs.filter(m=>m.fecha===f&&activo(m));const sm=t=>s.filter(m=>m.tipo===t).reduce((a,m)=>a+(+m.monto||0),0);
+  const sueldo=sm('sueldo'),extra=sm('extra');return{sueldo,extra,total:sueldo+extra,pendExtra:S.movs.filter(m=>m.fecha===f&&m.tipo==='extra'&&m.estado==='pendiente').length}}
+function tuDiaHtml(f){const d=tuDia(f);return `<div class="banner info" style="margin-top:12px">💰 <b>Antes de irte, toma tu día de la caja:</b><br>Sueldo ${money(d.sueldo)}${d.extra?` + horas extra ${money(d.extra)}`:''} = <b style="font-size:20px">${money(d.total)}</b>${d.pendExtra?`<br><span class="small">Tienes ${d.pendExtra} solicitud(es) de horas extra por autorizar. Cuando el administrador las autorice, las puedes tomar.</span>`:''}</div>`}
+function lineLabel(m){
+  if(m.tipo==='venta')return (m.lugar||'Venta')+(m.litros?` · ${num(m.litros)} L`:'');
+  if(m.tipo==='diesel')return `${num(m.litros)} L`+(has(m.dedosAntes)?` · ${num(m.dedosAntes)}→${num(m.dedosDespues)} dedos`:'');
+  if(m.tipo==='extra')return `${num(m.horas)} h`+(m.motivo?` · ${m.motivo}`:'');
+  if(m.tipo==='gasto'||m.tipo==='reparacion')return m.concepto||T[m.tipo].n;
+  if(m.tipo==='sueldo')return 'Sueldo del día';
+  if(m.tipo==='prestamo')return (m.origen==='caja'?'De la caja':'Depósito del admin')+(m.motivo?` · ${m.motivo}`:'');
+  return m.nota||(T[m.tipo]||{n:m.tipo}).n;
 }
 function facturaPend(){return S.movs.filter(m=>m.tipo==='diesel'&&vigente(m)&&!m.facturado)}
 function nPend(){const p=pendientes();return p.movs.length+p.reps.length}
@@ -365,9 +382,15 @@ function fJornadaIni(){
     toast('¡Jornada iniciada! Buen día');},{btn:'Iniciar jornada'});
 }
 function fJornadaFin(){
-  sheet('🌙 Cerrar jornada',`${fNum('dedos','¿Con cuántos dedos de diésel queda el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',false)}`,
+  const f=today();
+  sheet('🌙 Cerrar jornada',`${fNum('dedos','¿Con cuántos dedos de diésel queda el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',false)}${tuDiaHtml(f)}`,
   async d=>{const foto=await subirFoto(d.foto);
-    return save(col('jornadas').doc(today()).update({cierre:Date.now(),dedosCierre:+d.dedos,fotoCierre:foto}),'Jornada cerrada. ¡Descansa!')},{btn:'Cerrar jornada'});
+    const ok=await save(col('jornadas').doc(f).update({cierre:Date.now(),dedosCierre:+d.dedos,fotoCierre:foto}));
+    if(ok){const t=tuDia(f);const w=weekState(satOf(f));
+      setTimeout(()=>sheet('🌙 Jornada cerrada',`<div class="center" style="margin:10px 0"><div class="mut">Toma tu día de la caja</div><div class="big pos">${money(t.total)}</div><div class="small mut">Sueldo ${money(t.sueldo)}${t.extra?` + horas extra ${money(t.extra)}`:''}</div></div>
+        ${t.pendExtra?`<div class="banner warn small">Tienes ${t.pendExtra} solicitud(es) de horas extra por autorizar.</div>`:''}
+        <div class="kv"><span>Efectivo que debe quedar en caja</span><b>${money(w.caja)}</b></div><div class="center" style="margin-top:14px">¡Gracias por tu trabajo, descansa! 👋</div>`,null),350)}
+    return ok},{btn:'Cerrar jornada'});
 }
 function fRepUrg(){
   sheet('🚨 Reportar reparación urgente',`${fArea('desc','¿Qué pasó?','Ej. Se ponchó llanta trasera, fuga en la bomba')}${fFoto('Foto',false)}`,
@@ -479,8 +502,9 @@ function vHoyChofer(){
     h+=`<div class="banner">🚫 El administrador NO aceptó el crédito: cobra <b>${money(m.monto)}</b> en ${esc(m.lugar)} (${dLabel(m.fecha)}).<div class="btns"><button class="btn sm sec" data-act="cobrar" data-id="${esc(m.id)}">Ya lo cobré</button></div></div>`});
   h+=`<div class="card">`;
   if(!j)h+=`<h3>Jornada de hoy</h3><div class="mut small" style="margin-bottom:10px">${dLabel(t)} · Entrada ${esc(cfg('horaInicio'))}</div><button class="btn block huge" data-act="jIni">☀️ Iniciar jornada</button><div class="hint center">Anota los dedos de diésel (la foto de la varilla es opcional).</div>`;
+  else if(j.noTrabajado)h+=`<h3>Hoy no se trabaja</h3><div class="mut">El administrador marcó hoy como día no trabajado${j.motivoNT?`: <b>${esc(j.motivoNT)}</b>`:''}.</div>`;
   else if(!j.cierre)h+=`<div class="row"><div><h3>Jornada iniciada</h3><div class="small mut">A las ${hhmm(j.inicio)} · Amaneció con ${num(j.dedosInicio)} dedos</div></div><span class="pill ok">Trabajando</span></div><button class="btn sec block" style="margin-top:8px" data-act="jFin">🌙 Cerrar jornada</button>`;
-  else h+=`<div class="row"><div><h3>Jornada cerrada</h3><div class="small mut">${hhmm(j.inicio)}–${hhmm(j.cierre)} · Quedó con ${num(j.dedosCierre)} dedos</div></div><span class="pill">Cerrada</span></div>`;
+  else h+=`<div class="row"><div><h3>Jornada cerrada</h3><div class="small mut">${hhmm(j.inicio)}–${hhmm(j.cierre)} · Quedó con ${num(j.dedosCierre)} dedos</div></div><span class="pill">Cerrada</span></div><div class="small" style="margin-top:6px">💰 Tu día: <b>${money(tuDia(t).total)}</b> (sueldo${tuDia(t).extra?' + horas extra':''})</div>`;
   h+=`</div>`;
   h+=`<div class="card"><div class="mut small">Efectivo que debes tener en caja</div><div class="big">${money(w.caja)}</div>
     <div class="small mut">Deuda de préstamos esta semana: <b>${money(w.deudaTotal)}</b> · Corte: sábado</div></div>`;
@@ -510,9 +534,9 @@ function vInicioAdmin(){
   const al=alertas();
   al.forEach(a=>h+=`<div class="banner ${a.lvl==='warn'?'warn':''}" ${a.act?`data-act="tab" data-id="${a.act}" style="cursor:pointer"`:''}>${esc(a.t)}</div>`);
   h+=`<div class="card"><div class="row"><div><h3>${esc(cfg('nombreChofer'))} · hoy</h3><div class="small mut">${
-    !j?'No ha iniciado jornada':!j.cierre?`Inició ${hhmm(j.inicio)} · ${num(j.dedosInicio)} dedos`:`${hhmm(j.inicio)}–${hhmm(j.cierre)} · cerró con ${num(j.dedosCierre)} dedos`}</div></div>
-    <span class="pill ${!j?'warn':!j.cierre?'ok':''}">${!j?'Sin iniciar':!j.cierre?'Trabajando':'Cerrada'}</span></div>
-    ${j?`<div class="btns"><button class="btn sec sm" data-act="verJornada" data-id="${t}">Ver fotos de la varilla</button></div>`:''}</div>`;
+    !j?'No ha iniciado jornada':j.noTrabajado?'Día no trabajado'+(j.motivoNT?': '+esc(j.motivoNT):''):!j.cierre?`Inició ${hhmm(j.inicio)} · ${num(j.dedosInicio)} dedos`:`${hhmm(j.inicio)}–${hhmm(j.cierre)} · cerró con ${num(j.dedosCierre)} dedos`}</div></div>
+    <span class="pill ${!j?'warn':j.noTrabajado?'bad':!j.cierre?'ok':''}">${!j?'Sin iniciar':j.noTrabajado?'No se trabaja':!j.cierre?'Trabajando':'Cerrada'}</span></div>
+    <div class="btns">${j&&j.inicio?`<button class="btn sec sm" data-act="verJornada" data-id="${t}">Ver fotos de la varilla</button>`:''}${!j?`<button class="btn sec sm" data-act="noTrab" data-id="${t}">Hoy no se trabaja</button>`:''}${j&&j.noTrabajado?`<button class="btn sec sm" data-act="quitarNT" data-id="${t}">Quitar día no trabajado</button>`:''}</div></div>`;
   h+=`<div class="grid2"><div class="card"><div class="mut small">Ventas de hoy</div><div class="mid">${money(hoyV.reduce((a,m)=>a+(+m.monto||0),0))}</div><div class="small mut">${hoyV.length} viaje(s)</div></div>
     <div class="card"><div class="mut small">Caja del chofer</div><div class="mid">${money(w.caja)}</div><div class="small mut">Préstamos: ${money(w.deudaTotal)}</div></div></div>`;
   h+=`<div class="card" data-act="tab" data-id="semana" style="cursor:pointer"><div class="mut small">Esta semana (hasta hoy)</div>
@@ -525,6 +549,7 @@ function vInicioAdmin(){
     <button class="tile" data-act="nExtra"><span class="e">⏱️</span>Horas extra</button>
     <button class="tile" data-act="nGasto"><span class="e">🧾</span>Gasto</button>
     <button class="tile" data-act="nVenta"><span class="e">💧</span>Venta</button>
+    <button class="tile" data-act="diaHoy"><span class="e">📅</span>Reporte del día</button>
     <button class="tile" data-act="tab" data-id="cobrar"><span class="e">💵</span>Por cobrar${(()=>{const n=S.movs.filter(m=>m.tipo==='venta'&&vigente(m)&&m.pago==='pendiente').length;return n?` (${n})`:''})()}</button>
     <button class="tile" data-act="tab" data-id="facturas"><span class="e">🧾</span>Facturas diésel${facturaPend().length?` (${facturaPend().length})`:''}</button></div>`;
   const rec=S.movs.slice().sort(sortTs).slice(0,15);
@@ -590,13 +615,14 @@ function vSemana(){
     ${w.deudaAnt?`<div class="kv"><span>Deuda de semanas anteriores</span><b>${money(w.deudaAnt)}</b></div>`:''}
     <div class="kv"><span>Préstamos de esta semana</span><b>${money(w.prest)}</b></div>
     <div class="kv tot"><span>Debe pagar de préstamos</span><span>${money(w.deudaTotal)}</span></div>
-    <div class="small mut" style="margin-top:6px">Días trabajados: ${r.dias} · Sueldo cobrado: ${money(r.sueldos)} · Horas extra: ${money(r.extras)}</div>`;
+    <div class="small mut" style="margin-top:6px">Días trabajados: ${r.dias}${r.diasNT?` · No trabajados: ${r.diasNT}`:''} · Sueldo cobrado: ${money(r.sueldos)} · Horas extra: ${money(r.extras)}</div>`;
   if(w.closed)h+=`<div class="banner info small" style="margin:10px 0 0">Entregó ${money(c.recibido)} de caja y ${money(c.abono)} de préstamos.${c.fondoQueda?` Queda fondo de ${money(c.fondoQueda)}.`:''}${c.deudaPasa>0?` Pasa deuda de ${money(c.deudaPasa)}.`:''}</div>`;
   h+=`<div class="small" style="margin-top:8px">${c.confirmChofer?'✅ El chofer confirmó el corte':'⏳ El chofer no ha confirmado'}</div><div class="btns">`;
   if(!isAdmin()&&!c.confirmChofer)h+=`<button class="btn ok" data-act="confirmCorte">Confirmar mi corte</button>`;
   if(isAdmin())h+=w.closed?`<button class="btn sec" data-act="reabrir">Reabrir semana</button>`:`<button class="btn" data-act="cerrar">🔒 Cerrar semana</button>`;
   h+=`</div></div>`;
   if(isAdmin()){
+    h+=`<button class="btn sec block" style="margin-bottom:12px" data-act="diaHoy">📅 Ver reporte por día</button>`;
     h+=`<div class="card"><h3>Resultados</h3>
       <div class="kv"><span>💧 Ventas en efectivo</span><b>${money(r.ingEf)}</b></div>
       <div class="kv"><span>💧 Ventas por transferencia</span><b>${money(r.ingTr)}</b></div>
@@ -649,6 +675,41 @@ function vTaller(){
   h+=`<h2>Mantenimiento programado</h2>`+(rut.length?rut.map(repRow).join(''):`<div class="card empty">${isAdmin()?'Programa el cambio de aceite, llantas, filtros, revisión de bomba…':'Sin mantenimientos programados.'}</div>`);
   if(hist.length)h+=`<h2>Historial</h2>`+hist.map(repRow).join('');
   return h;
+}
+function vDia(){
+  const f=S.dia||today();const j=S.jornadas.find(x=>x.id===f);
+  const ms=S.movs.filter(m=>m.fecha===f&&vigente(m));const ok=ms.filter(activo);const pend=ms.filter(m=>!activo(m));
+  const sum=a=>a.reduce((s,m)=>s+(+m.monto||0),0);const ty=t=>ok.filter(m=>m.tipo===t);
+  const ventas=ty('venta');
+  const gI=[['💵 Ventas en efectivo',ventas.filter(m=>m.pago==='efectivo')],['🏦 Ventas por transferencia',ventas.filter(m=>m.pago==='transferencia')],['🤝 Ventas por cobrar',ventas.filter(m=>m.pago==='pendiente')]];
+  const gE=[['👷 Sueldo',ty('sueldo')],['⏱️ Horas extra',ty('extra')],['⛽ Diésel',ty('diesel')],['🧾 Gastos',ty('gasto')],['🔧 Reparaciones',ty('reparacion')]];
+  const gO=[['🤝 Préstamos al chofer',ty('prestamo')],['🏦 Depósitos del admin al chofer',ty('dep_admin')],['📤 Depósitos del chofer al admin',ty('dep_chofer')]];
+  const ing=sum(ventas),egr=gE.reduce((a,[,x])=>a+sum(x),0),util=ing-egr,cajaDia=ms.reduce((a,m)=>a+cajaDelta(m),0);
+  const grp=(t,arr,cls)=>arr.length?`<div class="gh"><span>${t}</span><b class="${cls}">${money(sum(arr))}</b></div>${arr.map(m=>`<div class="gl" data-act="verMov" data-id="${esc(m.id)}"><span>${esc(lineLabel(m))}</span><span class="${cls}">${money(m.monto)}</span></div>`).join('')}`:'';
+  let h=`<div class="card wnav"><button class="btn sec sm" data-act="dPrev">‹</button><input type="date" id="diaPick" value="${f}" max="${today()}" style="flex:1;text-align:center;font-weight:700"><button class="btn sec sm" data-act="dNext" ${f>=today()?'disabled':''}>›</button></div>`;
+  h+=`<div class="card"><div class="row" style="padding-top:0"><div><h3>${dLabel(f)}</h3><div class="small mut">${
+    !j?'Sin jornada registrada':j.noTrabajado?'Día no trabajado'+(j.motivoNT?': '+esc(j.motivoNT):''):`Jornada ${hhmm(j.inicio)}–${hhmm(j.cierre)||'en curso'} · diésel ${has(j.dedosInicio)?num(j.dedosInicio):'—'} → ${has(j.dedosCierre)?num(j.dedosCierre):'—'} dedos`}</div></div>
+    <span class="pill ${!j?'warn':j.noTrabajado?'bad':'ok'}">${!j?'Sin registro':j.noTrabajado?'No trabajado':'Trabajado'}</span></div>
+    <div class="btns">${!j||!j.noTrabajado?`<button class="btn sec sm" data-act="noTrab" data-id="${f}">Marcar día no trabajado</button>`:`<button class="btn sec sm" data-act="quitarNT" data-id="${f}">Quitar día no trabajado</button>`}${j&&j.inicio?`<button class="btn sec sm" data-act="verJornada" data-id="${f}">Fotos de la varilla</button>`:''}</div></div>`;
+  h+=`<div class="card"><div class="gsec in"><span>INGRESOS</span><span>${money(ing)}</span></div>${gI.map(([t,a])=>grp(t,a,'pos')).join('')||'<div class="empty">Sin ventas este día</div>'}
+    <div class="gsec out" style="margin-top:16px"><span>EGRESOS</span><span>${money(egr)}</span></div>${gE.map(([t,a])=>grp(t,a,'neg')).join('')||'<div class="empty">Sin egresos este día</div>'}
+    <div class="kv tot" style="margin-top:14px"><span>Utilidad del día</span><span class="${util>=0?'pos':'neg'}">${money(util)}</span></div></div>`;
+  if(gO.some(([,a])=>a.length))h+=`<div class="card"><div class="gsec oth"><span>OTROS MOVIMIENTOS DE CAJA</span></div>${gO.map(([t,a])=>grp(t,a,'')).join('')}<div class="hint">No cuentan como ingreso ni egreso del negocio.</div></div>`;
+  h+=`<div class="card"><div class="kv"><span>Efectivo que entró/salió de la caja este día</span><b class="${cajaDia>=0?'pos':'neg'}">${money(cajaDia)}</b></div>
+    <div class="kv"><span>Viajes · agua entregada</span><b>${ventas.length} · ${num(ventas.reduce((a,m)=>a+(+m.litros||0),0))} L</b></div>
+    ${pend.length?`<div class="kv"><span>Pendientes de autorizar</span><b>${pend.length}</b></div>`:''}</div>`;
+  h+=`<div class="btns"><button class="btn sec" data-act="copiarDia">📋 Copiar reporte</button><a class="btn ok" href="https://wa.me/?text=${encodeURIComponent(diaText(f))}" target="_blank" rel="noopener">Enviar por WhatsApp</a></div>`;
+  return h;
+}
+function diaText(f){
+  const j=S.jornadas.find(x=>x.id===f);const ok=S.movs.filter(m=>m.fecha===f&&vigente(m)&&activo(m));const sum=a=>a.reduce((s,m)=>s+(+m.monto||0),0);const ty=t=>ok.filter(m=>m.tipo===t);
+  const ventas=ty('venta');const L=[`*PIPAS CUBA – Reporte del día*`,dLabel(f),j?(j.noTrabajado?'Día no trabajado'+(j.motivoNT?': '+j.motivoNT:''):`Jornada ${hhmm(j.inicio)}–${hhmm(j.cierre)||'en curso'}`):'Sin jornada',''];
+  const blk=(t,a)=>{if(!a.length)return;L.push(`  ${t}: ${money(sum(a))}`);a.forEach(m=>L.push(`    - ${lineLabel(m)}: ${money(m.monto)}`))};
+  L.push(`🟢 *INGRESOS: ${money(sum(ventas))}*`);blk('Efectivo',ventas.filter(m=>m.pago==='efectivo'));blk('Transferencia',ventas.filter(m=>m.pago==='transferencia'));blk('Por cobrar',ventas.filter(m=>m.pago==='pendiente'));
+  const E=[['Sueldo',ty('sueldo')],['Horas extra',ty('extra')],['Diésel',ty('diesel')],['Gastos',ty('gasto')],['Reparaciones',ty('reparacion')]];const egr=E.reduce((a,[,x])=>a+sum(x),0);
+  L.push('',`🔴 *EGRESOS: ${money(egr)}*`);E.forEach(([t,a])=>blk(t,a));
+  L.push('',`*UTILIDAD DEL DÍA: ${money(sum(ventas)-egr)}*`);
+  return L.join('\n');
 }
 function vCobrar(){
   const pc=S.movs.filter(m=>m.tipo==='venta'&&vigente(m)&&m.pago==='pendiente').sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
@@ -708,11 +769,11 @@ function draw(){
   if(!S.isOwner)chips.push('<button class="chip" data-act="logout">Salir</button>');
   $('#hbtns').innerHTML=S.loaded?chips.join(''):'';
   const tabs=adm?TABS_ADMIN:TABS_CHOFER;
-  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes','facturas','cobrar'].includes(S.tab))||(['ajustes','facturas','cobrar'].includes(S.tab)&&!adm))S.tab=tabs[0][0];
+  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes','facturas','cobrar','dia'].includes(S.tab))||(['ajustes','facturas','cobrar','dia'].includes(S.tab)&&!adm))S.tab=tabs[0][0];
   if(!S.loaded){$('#main').innerHTML=`<div class="load">${S.slow?'La conexión está lenta. Seguimos intentando…':'Cargando datos…'}</div>`;$('#nav').innerHTML='';return}
   const np=adm?nPend():0;const npe=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino').length;
   $('#nav').innerHTML=tabs.map(([k,i,n])=>{const bd=k==='autorizar'&&np?np:k==='pedidos'&&!adm&&npe?npe:0;return `<button class="${S.tab===k?'on':''}" data-act="tab" data-id="${k}"><span class="ic">${i}</span>${n}${bd?`<span class="badge">${bd}</span>`:''}</button>`}).join('');
-  const V={cobrar:vCobrar,facturas:vFacturas,hoy:vHoyChofer,inicio:vInicioAdmin,pedidos:vPedidos,autorizar:vAutorizar,semana:vSemana,taller:vTaller,ajustes:vAjustes};
+  const V={dia:vDia,cobrar:vCobrar,facturas:vFacturas,hoy:vHoyChofer,inicio:vInicioAdmin,pedidos:vPedidos,autorizar:vAutorizar,semana:vSemana,taller:vTaller,ajustes:vAjustes};
   let html='';try{html=(V[S.tab]||V.inicio)()}catch(e){console.error(e);html='<div class="card">Ocurrió un error al mostrar esta sección.</div>'}
   if(S.err)html=`<div class="banner warn small">Problema de conexión: algunos datos pueden no estar actualizados.</div>`+html;
   $('#main').innerHTML=html;
@@ -722,6 +783,18 @@ function draw(){
 const findMov=id=>S.movs.find(m=>m.id===id);
 const ACT={
   closeSheet,
+  diaHoy:()=>{S.dia=S.dia||today();S.tab='dia';window.scrollTo(0,0);render()},
+  dPrev:()=>{S.dia=addDays(S.dia||today(),-1);render()},
+  dNext:()=>{const n=addDays(S.dia||today(),1);if(n<=today())S.dia=n;render()},
+  copiarDia:async()=>{try{await navigator.clipboard.writeText(diaText(S.dia||today()));toast('Reporte copiado')}catch(e){toast('No se pudo copiar; usa el botón de WhatsApp')}},
+  noTrab:d=>{const f=d.id;const j=S.jornadas.find(x=>x.id===f);
+    sheet('🚫 Día no trabajado · '+dLabel(f),`${fIn('motivo','Motivo (opcional)','placeholder="Ej. Descanso, camión en el taller, lluvia"')}
+      ${j&&j.inicio?'<div class="banner warn small" style="margin-top:12px">Ese día el chofer sí inició jornada. Al marcarlo como no trabajado se anula su sueldo de ese día.</div>':'<div class="hint">Ese día no se le avisa al chofer que inicie jornada ni se registra sueldo.</div>'}`,
+    async x=>{const ref=col('jornadas').doc(f);const ok=await save(j?ref.update({noTrabajado:true,motivoNT:x.motivo||''}):ref.set({noTrabajado:true,motivoNT:x.motivo||'',por:'admin'}));
+      if(ok){const s=findMov('sueldo-'+f);if(s&&s.estado!=='anulado')await updMov(s.id,{estado:'anulado'});toast('Marcado como día no trabajado')}return ok},{btn:'Marcar no trabajado'})},
+  quitarNT:async d=>{const f=d.id;const j=S.jornadas.find(x=>x.id===f);if(!j)return;
+    const ok=await save(j.inicio?col('jornadas').doc(f).update({noTrabajado:false}):col('jornadas').doc(f).delete());
+    if(ok){const s=findMov('sueldo-'+f);if(s&&j.inicio&&s.estado==='anulado')await updMov(s.id,{estado:'ok'});toast('Se quitó el día no trabajado')}},
   precioOk:d=>updMov(d.id,{precioEstado:'ok'}).then(o=>o&&toast('Precio confirmado')),
   precioCorr:d=>{const m=findMov(d.id);if(!m)return;sheet('💲 Corregir precio',`<div class="mut">${esc(m.lugar)} · ${num(m.litros)} L · registró ${money(m.monto)}</div>${fNum('monto','Precio correcto ($)','required')}<div class="hint">Si la venta fue en efectivo, la caja del chofer se ajusta sola.</div>`,
     async x=>updMov(m.id,{monto:+x.monto,precioEstado:'corregido',montoOriginal:m.monto}).then(o=>{if(o)toast('Precio corregido');return o}),{btn:'Guardar precio'})},
@@ -782,6 +855,7 @@ const ACT={
     sheet(`${t.e} ${esc(movTitle(m))}`,`<div>${estadoPill(m)}</div>${rows.map(([k,v])=>`<div class="kv"><span class="mut">${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}
       ${m.correccion?`<div class="banner warn small" style="margin-top:10px">✏️ ${esc(m.correccion)}</div>`:''}${fotoImg(m.foto)}<div class="btns">${b}</div>`,null)}
 };
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='diaPick'&&e.target.value){S.dia=e.target.value>today()?today():e.target.value;render()}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const f=ACT[b.dataset.act];if(!f)return;
   if(b.tagName==='A')return;e.preventDefault();f(b.dataset)});
 
