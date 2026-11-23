@@ -383,7 +383,18 @@ function fJornadaIni(){
 }
 function fJornadaFin(){
   const f=today();
-  sheet('🌙 Cerrar jornada',`${fNum('dedos','¿Con cuántos dedos de diésel queda el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',false)}${tuDiaHtml(f)}`,
+  const hoy=S.movs.filter(m=>m.fecha===f&&vigente(m));const cnt=t=>hoy.filter(m=>m.tipo===t);const tot=a=>a.reduce((s,m)=>s+(+m.monto||0),0);
+  const pedP=S.pedidos.filter(p=>(p.estado==='asignado'||p.estado==='en_camino')&&(p.fecha||f)<=f);
+  const chk=`<div class="banner warn" style="margin-top:4px">⚠️ <b>¿No te queda nada por reportar?</b><div class="small" style="font-weight:500;margin-top:6px">Revisa que hayas registrado <b>todas</b> tus ventas, cargas de diésel, gastos, préstamos y depósitos de hoy. Después de cerrar ya no se pueden corregir sin pedírselo al administrador.</div></div>
+    <div class="card" style="margin:8px 0">
+      <div class="kv"><span>💧 Ventas registradas</span><b>${cnt('venta').length} · ${money(tot(cnt('venta')))}</b></div>
+      <div class="kv"><span>⛽ Cargas de diésel</span><b>${cnt('diesel').length} · ${money(tot(cnt('diesel')))}</b></div>
+      <div class="kv"><span>🧾 Gastos</span><b>${cnt('gasto').length} · ${money(tot(cnt('gasto')))}</b></div>
+      <div class="kv"><span>📤 Depósitos al admin</span><b>${cnt('dep_chofer').length} · ${money(tot(cnt('dep_chofer')))}</b></div>
+      <button type="button" class="btn sec sm block" style="margin-top:8px" data-act="diaDesdeCierre">📅 Ver mi reporte del día completo</button></div>
+    ${pedP.length?`<div class="banner small">🚚 Tienes ${pedP.length} pedido(s) sin marcar como entregado: ${pedP.map(p=>esc(p.lugar)).join(', ')}. Si ya los surtiste, regístralos antes de cerrar.</div>`:''}`;
+  sheet('🌙 Cerrar jornada',`${chk}${fNum('dedos','¿Con cuántos dedos de diésel queda el tanque?','step="0.5" required')}${fFoto('Foto de la varilla',false)}${tuDiaHtml(f)}
+    <label style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-weight:700;cursor:pointer"><input type="checkbox" name="confirmo" required style="width:24px;height:24px;flex:none;margin:0"> Sí, ya registré todo lo de hoy y no me queda nada por reportar.</label>`,
   async d=>{const foto=await subirFoto(d.foto);
     const ok=await save(col('jornadas').doc(f).update({cierre:Date.now(),dedosCierre:+d.dedos,fotoCierre:foto}));
     if(ok){const t=tuDia(f);const w=weekState(satOf(f));
@@ -517,7 +528,7 @@ function vHoyChofer(){
     <button class="tile" data-act="nDepChofer"><span class="e">📤</span>Deposité al admin</button>
     <button class="tile" data-act="nDepAdmin"><span class="e">🏦</span>Me depositaron</button>
     <button class="tile" data-act="nRepUrg"><span class="e">🚨</span>Falla urgente</button>
-    <button class="tile" data-act="tab" data-id="pedidos"><span class="e">📋</span>Pedidos</button></div>`;
+    <button class="tile" data-act="diaHoy"><span class="e">📅</span>Reporte del día</button></div>`;
   const peds=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino');
   if(peds.length)h+=`<h2>Pedidos pendientes (${peds.length})</h2>`+peds.sort(pedSort).slice(0,2).map(pedCard).join('');
   const pc=S.movs.filter(m=>m.tipo==='venta'&&vigente(m)&&m.pago==='pendiente'&&m.creditoEstado!=='rechazado');
@@ -619,6 +630,7 @@ function vSemana(){
   if(w.closed)h+=`<div class="banner info small" style="margin:10px 0 0">Entregó ${money(c.recibido)} de caja y ${money(c.abono)} de préstamos.${c.fondoQueda?` Queda fondo de ${money(c.fondoQueda)}.`:''}${c.deudaPasa>0?` Pasa deuda de ${money(c.deudaPasa)}.`:''}</div>`;
   h+=`<div class="small" style="margin-top:8px">${c.confirmChofer?'✅ El chofer confirmó el corte':'⏳ El chofer no ha confirmado'}</div><div class="btns">`;
   if(!isAdmin()&&!c.confirmChofer)h+=`<button class="btn ok" data-act="confirmCorte">Confirmar mi corte</button>`;
+  if(!isAdmin())h+=`<button class="btn sec" data-act="diaHoy">📅 Reporte por día</button>`;
   if(isAdmin())h+=w.closed?`<button class="btn sec" data-act="reabrir">Reabrir semana</button>`:`<button class="btn" data-act="cerrar">🔒 Cerrar semana</button>`;
   h+=`</div></div>`;
   if(isAdmin()){
@@ -690,10 +702,10 @@ function vDia(){
   h+=`<div class="card"><div class="row" style="padding-top:0"><div><h3>${dLabel(f)}</h3><div class="small mut">${
     !j?'Sin jornada registrada':j.noTrabajado?'Día no trabajado'+(j.motivoNT?': '+esc(j.motivoNT):''):`Jornada ${hhmm(j.inicio)}–${hhmm(j.cierre)||'en curso'} · diésel ${has(j.dedosInicio)?num(j.dedosInicio):'—'} → ${has(j.dedosCierre)?num(j.dedosCierre):'—'} dedos`}</div></div>
     <span class="pill ${!j?'warn':j.noTrabajado?'bad':'ok'}">${!j?'Sin registro':j.noTrabajado?'No trabajado':'Trabajado'}</span></div>
-    <div class="btns">${!j||!j.noTrabajado?`<button class="btn sec sm" data-act="noTrab" data-id="${f}">Marcar día no trabajado</button>`:`<button class="btn sec sm" data-act="quitarNT" data-id="${f}">Quitar día no trabajado</button>`}${j&&j.inicio?`<button class="btn sec sm" data-act="verJornada" data-id="${f}">Fotos de la varilla</button>`:''}</div></div>`;
+    <div class="btns">${!isAdmin()?'':!j||!j.noTrabajado?`<button class="btn sec sm" data-act="noTrab" data-id="${f}">Marcar día no trabajado</button>`:`<button class="btn sec sm" data-act="quitarNT" data-id="${f}">Quitar día no trabajado</button>`}${j&&j.inicio?`<button class="btn sec sm" data-act="verJornada" data-id="${f}">Fotos de la varilla</button>`:''}</div></div>`;
   h+=`<div class="card"><div class="gsec in"><span>INGRESOS</span><span>${money(ing)}</span></div>${gI.map(([t,a])=>grp(t,a,'pos')).join('')||'<div class="empty">Sin ventas este día</div>'}
     <div class="gsec out" style="margin-top:16px"><span>EGRESOS</span><span>${money(egr)}</span></div>${gE.map(([t,a])=>grp(t,a,'neg')).join('')||'<div class="empty">Sin egresos este día</div>'}
-    <div class="kv tot" style="margin-top:14px"><span>Utilidad del día</span><span class="${util>=0?'pos':'neg'}">${money(util)}</span></div></div>`;
+    ${isAdmin()?`<div class="kv tot" style="margin-top:14px"><span>Utilidad del día</span><span class="${util>=0?'pos':'neg'}">${money(util)}</span></div>`:''}</div>`;
   if(gO.some(([,a])=>a.length))h+=`<div class="card"><div class="gsec oth"><span>OTROS MOVIMIENTOS DE CAJA</span></div>${gO.map(([t,a])=>grp(t,a,'')).join('')}<div class="hint">No cuentan como ingreso ni egreso del negocio.</div></div>`;
   h+=`<div class="card"><div class="kv"><span>Efectivo que entró/salió de la caja este día</span><b class="${cajaDia>=0?'pos':'neg'}">${money(cajaDia)}</b></div>
     <div class="kv"><span>Viajes · agua entregada</span><b>${ventas.length} · ${num(ventas.reduce((a,m)=>a+(+m.litros||0),0))} L</b></div>
@@ -708,7 +720,7 @@ function diaText(f){
   L.push(`🟢 *INGRESOS: ${money(sum(ventas))}*`);blk('Efectivo',ventas.filter(m=>m.pago==='efectivo'));blk('Transferencia',ventas.filter(m=>m.pago==='transferencia'));blk('Por cobrar',ventas.filter(m=>m.pago==='pendiente'));
   const E=[['Sueldo',ty('sueldo')],['Horas extra',ty('extra')],['Diésel',ty('diesel')],['Gastos',ty('gasto')],['Reparaciones',ty('reparacion')]];const egr=E.reduce((a,[,x])=>a+sum(x),0);
   L.push('',`🔴 *EGRESOS: ${money(egr)}*`);E.forEach(([t,a])=>blk(t,a));
-  L.push('',`*UTILIDAD DEL DÍA: ${money(sum(ventas)-egr)}*`);
+  if(isAdmin())L.push('',`*UTILIDAD DEL DÍA: ${money(sum(ventas)-egr)}*`);
   return L.join('\n');
 }
 function vCobrar(){
@@ -769,7 +781,7 @@ function draw(){
   if(!S.isOwner)chips.push('<button class="chip" data-act="logout">Salir</button>');
   $('#hbtns').innerHTML=S.loaded?chips.join(''):'';
   const tabs=adm?TABS_ADMIN:TABS_CHOFER;
-  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes','facturas','cobrar','dia'].includes(S.tab))||(['ajustes','facturas','cobrar','dia'].includes(S.tab)&&!adm))S.tab=tabs[0][0];
+  if(!S.tab||(![...tabs.map(t=>t[0]),'ajustes','facturas','cobrar','dia'].includes(S.tab))||(['ajustes','facturas','cobrar'].includes(S.tab)&&!adm))S.tab=tabs[0][0];
   if(!S.loaded){$('#main').innerHTML=`<div class="load">${S.slow?'La conexión está lenta. Seguimos intentando…':'Cargando datos…'}</div>`;$('#nav').innerHTML='';return}
   const np=adm?nPend():0;const npe=S.pedidos.filter(p=>p.estado==='asignado'||p.estado==='en_camino').length;
   $('#nav').innerHTML=tabs.map(([k,i,n])=>{const bd=k==='autorizar'&&np?np:k==='pedidos'&&!adm&&npe?npe:0;return `<button class="${S.tab===k?'on':''}" data-act="tab" data-id="${k}"><span class="ic">${i}</span>${n}${bd?`<span class="badge">${bd}</span>`:''}</button>`}).join('');
@@ -783,6 +795,7 @@ function draw(){
 const findMov=id=>S.movs.find(m=>m.id===id);
 const ACT={
   closeSheet,
+  diaDesdeCierre:()=>{closeSheet();S.dia=today();S.tab='dia';window.scrollTo(0,0);render()},
   diaHoy:()=>{S.dia=S.dia||today();S.tab='dia';window.scrollTo(0,0);render()},
   dPrev:()=>{S.dia=addDays(S.dia||today(),-1);render()},
   dNext:()=>{const n=addDays(S.dia||today(),1);if(n<=today())S.dia=n;render()},
