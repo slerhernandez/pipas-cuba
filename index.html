@@ -614,7 +614,13 @@ function reportText(sat){
     `*Ingresos:* ${money(r.ingresos)}`,`  Efectivo: ${money(r.ingEf)}`,`  Transferencia: ${money(r.ingTr)}`,`  Por cobrar: ${money(r.ingPend)}`,``,
     `*Gastos:* ${money(r.egresos)}`,`  Diésel: ${money(r.diesel)} (${num(r.dieselL)} L)`,`  Sueldos: ${money(r.sueldos)} (${r.dias} días)`,`  Horas extra: ${money(r.extras)}`,`  Reparaciones: ${money(r.repar)}`,`  Otros gastos: ${money(r.gastos)}`,``,
     `*UTILIDAD: ${money(r.utilidad)}*`,``,`Viajes: ${r.viajes} · Agua entregada: ${num(r.litrosAgua)} L`,
-    `Efectivo en caja: ${money(w.caja)} · Préstamos: ${money(w.deudaTotal)}`];
+    `Efectivo en caja: ${money(w.caja)} · Préstamos: ${money(w.deudaTotal)}`,``,`*DESGLOSE POR DÍA*`];
+  for(let i=6;i>=0;i--){const f=addDays(sat,-i);if(f>today())continue;const d=dayData(f);
+    if(d.j&&d.j.noTrabajado){L.push(`${dLabel(f)}: no trabajado`);continue}
+    if(!d.ok.length)continue;
+    L.push(``,`*${dLabel(f)}*`,`  🟢 Ingresos: ${money(d.ing)}`);d.gI.forEach(([t,a])=>{if(a.length)L.push(`     ${t.replace(/^\S+\s/,'')}: ${money(d.sum(a))}`)});
+    L.push(`  🔴 Egresos: ${money(d.egr)}`);d.gE.forEach(([t,a])=>{if(a.length)L.push(`     ${t.replace(/^\S+\s/,'')}: ${money(d.sum(a))}`)});
+    L.push(`  Utilidad: ${money(d.util)}`)}
   return L.join('\n');
 }
 function vSemana(){
@@ -663,6 +669,13 @@ function vSemana(){
     if(r.porLugar.length)h+=`<div class="card"><h3>Ventas por lugar</h3><div style="overflow-x:auto"><table><tr><th>Lugar</th><th>Viajes</th><th>Litros</th><th>Total</th></tr>${r.porLugar.map(p=>`<tr><td>${esc(p.n)}</td><td>${p.v}</td><td>${num(p.l)}</td><td>${money(p.$)}</td></tr>`).join('')}</table></div></div>`;
     h+=`<div class="btns"><button class="btn sec" data-act="copiar">📋 Copiar reporte</button><a class="btn ok" href="https://wa.me/?text=${encodeURIComponent(reportText(sat))}" target="_blank" rel="noopener">Enviar por WhatsApp</a></div>`;
   }
+  h+=`<h2>Desglose por día</h2>`;
+  for(let i=6;i>=0;i--){const f=addDays(sat,-i);if(f>today())continue;const d=dayData(f);
+    const hay=d.ok.length||d.j;
+    h+=`<div class="card"><div class="row" style="padding-top:0;cursor:pointer" data-act="verDia" data-id="${f}"><div><h3 style="margin:0">${dLabel(f)}</h3><div class="small mut">${!d.j?'Sin jornada':d.j.noTrabajado?'No trabajado'+(d.j.motivoNT?': '+esc(d.j.motivoNT):''):`Jornada ${hhmm(d.j.inicio)}–${hhmm(d.j.cierre)||'en curso'}`} · ${d.ventas.length} viaje(s)</div></div>
+      <div class="r small"><div class="pos"><b>+${money(d.ing)}</b></div><div class="neg"><b>−${money(d.egr)}</b></div></div></div>
+      ${d.ok.length?ieHtml(d):`<div class="empty" style="padding:8px">${d.j&&d.j.noTrabajado?'Día no trabajado':'Sin movimientos'}</div>`}</div>`;
+  }
   const ms=S.movs.filter(m=>inWeek(m.fecha,sat)).sort(sortTs);
   h+=`<h2>Movimientos de la semana (${ms.length})</h2><div class="card">${ms.length?ms.map(movRow).join(''):'<div class="empty">Sin movimientos.</div>'}</div>`;
   return h;
@@ -688,25 +701,32 @@ function vTaller(){
   if(hist.length)h+=`<h2>Historial</h2>`+hist.map(repRow).join('');
   return h;
 }
-function vDia(){
-  const f=S.dia||today();const j=S.jornadas.find(x=>x.id===f);
+function dayData(f){
+  const j=S.jornadas.find(x=>x.id===f);
   const ms=S.movs.filter(m=>m.fecha===f&&vigente(m));const ok=ms.filter(activo);const pend=ms.filter(m=>!activo(m));
   const sum=a=>a.reduce((s,m)=>s+(+m.monto||0),0);const ty=t=>ok.filter(m=>m.tipo===t);
   const ventas=ty('venta');
   const gI=[['💵 Ventas en efectivo',ventas.filter(m=>m.pago==='efectivo')],['🏦 Ventas por transferencia',ventas.filter(m=>m.pago==='transferencia')],['🤝 Ventas por cobrar',ventas.filter(m=>m.pago==='pendiente')]];
   const gE=[['👷 Sueldo',ty('sueldo')],['⏱️ Horas extra',ty('extra')],['⛽ Diésel',ty('diesel')],['🧾 Gastos',ty('gasto')],['🔧 Reparaciones',ty('reparacion')]];
   const gO=[['🤝 Préstamos al chofer',ty('prestamo')],['🏦 Depósitos del admin al chofer',ty('dep_admin')],['📤 Depósitos del chofer al admin',ty('dep_chofer')]];
-  const ing=sum(ventas),egr=gE.reduce((a,[,x])=>a+sum(x),0),util=ing-egr,cajaDia=ms.reduce((a,m)=>a+cajaDelta(m),0);
-  const grp=(t,arr,cls)=>arr.length?`<div class="gh"><span>${t}</span><b class="${cls}">${money(sum(arr))}</b></div>${arr.map(m=>`<div class="gl" data-act="verMov" data-id="${esc(m.id)}"><span>${esc(lineLabel(m))}</span><span class="${cls}">${money(m.monto)}</span></div>`).join('')}`:'';
+  const ing=sum(ventas),egr=gE.reduce((a,[,x])=>a+sum(x),0);
+  return{f,j,ms,ok,pend,ventas,gI,gE,gO,ing,egr,util:ing-egr,cajaDia:ms.reduce((a,m)=>a+cajaDelta(m),0),sum};
+}
+function grpHtml(t,arr,cls){const s=arr.reduce((a,m)=>a+(+m.monto||0),0);return arr.length?`<div class="gh"><span>${t}</span><b class="${cls}">${money(s)}</b></div>${arr.map(m=>`<div class="gl" data-act="verMov" data-id="${esc(m.id)}"><span>${esc(lineLabel(m))}</span><span class="${cls}">${money(m.monto)}</span></div>`).join('')}`:''}
+function ieHtml(d,opts={}){
+  const util=isAdmin()?`<div class="kv tot" style="margin-top:12px"><span>Utilidad del día</span><span class="${d.util>=0?'pos':'neg'}">${money(d.util)}</span></div>`:'';
+  return `<div class="gsec in"><span>INGRESOS</span><span>${money(d.ing)}</span></div>${d.gI.map(([t,a])=>grpHtml(t,a,'pos')).join('')||'<div class="empty" style="padding:8px">Sin ventas</div>'}
+    <div class="gsec out" style="margin-top:12px"><span>EGRESOS</span><span>${money(d.egr)}</span></div>${d.gE.map(([t,a])=>grpHtml(t,a,'neg')).join('')||'<div class="empty" style="padding:8px">Sin egresos</div>'}${util}`;
+}
+function vDia(){
+  const f=S.dia||today();const d=dayData(f);const{j,ms,pend,ventas,gO,cajaDia}=d;
   let h=`<div class="card wnav"><button class="btn sec sm" data-act="dPrev">‹</button><input type="date" id="diaPick" value="${f}" max="${today()}" style="flex:1;text-align:center;font-weight:700"><button class="btn sec sm" data-act="dNext" ${f>=today()?'disabled':''}>›</button></div>`;
   h+=`<div class="card"><div class="row" style="padding-top:0"><div><h3>${dLabel(f)}</h3><div class="small mut">${
     !j?'Sin jornada registrada':j.noTrabajado?'Día no trabajado'+(j.motivoNT?': '+esc(j.motivoNT):''):`Jornada ${hhmm(j.inicio)}–${hhmm(j.cierre)||'en curso'} · diésel ${has(j.dedosInicio)?num(j.dedosInicio):'—'} → ${has(j.dedosCierre)?num(j.dedosCierre):'—'} dedos`}</div></div>
     <span class="pill ${!j?'warn':j.noTrabajado?'bad':'ok'}">${!j?'Sin registro':j.noTrabajado?'No trabajado':'Trabajado'}</span></div>
     <div class="btns">${!isAdmin()?'':!j||!j.noTrabajado?`<button class="btn sec sm" data-act="noTrab" data-id="${f}">Marcar día no trabajado</button>`:`<button class="btn sec sm" data-act="quitarNT" data-id="${f}">Quitar día no trabajado</button>`}${j&&j.inicio?`<button class="btn sec sm" data-act="verJornada" data-id="${f}">Fotos de la varilla</button>`:''}</div></div>`;
-  h+=`<div class="card"><div class="gsec in"><span>INGRESOS</span><span>${money(ing)}</span></div>${gI.map(([t,a])=>grp(t,a,'pos')).join('')||'<div class="empty">Sin ventas este día</div>'}
-    <div class="gsec out" style="margin-top:16px"><span>EGRESOS</span><span>${money(egr)}</span></div>${gE.map(([t,a])=>grp(t,a,'neg')).join('')||'<div class="empty">Sin egresos este día</div>'}
-    ${isAdmin()?`<div class="kv tot" style="margin-top:14px"><span>Utilidad del día</span><span class="${util>=0?'pos':'neg'}">${money(util)}</span></div>`:''}</div>`;
-  if(gO.some(([,a])=>a.length))h+=`<div class="card"><div class="gsec oth"><span>OTROS MOVIMIENTOS DE CAJA</span></div>${gO.map(([t,a])=>grp(t,a,'')).join('')}<div class="hint">No cuentan como ingreso ni egreso del negocio.</div></div>`;
+  h+=`<div class="card">${ieHtml(d)}</div>`;
+  if(gO.some(([,a])=>a.length))h+=`<div class="card"><div class="gsec oth"><span>OTROS MOVIMIENTOS DE CAJA</span></div>${gO.map(([t,a])=>grpHtml(t,a,'')).join('')}<div class="hint">No cuentan como ingreso ni egreso del negocio.</div></div>`;
   h+=`<div class="card"><div class="kv"><span>Efectivo que entró/salió de la caja este día</span><b class="${cajaDia>=0?'pos':'neg'}">${money(cajaDia)}</b></div>
     <div class="kv"><span>Viajes · agua entregada</span><b>${ventas.length} · ${num(ventas.reduce((a,m)=>a+(+m.litros||0),0))} L</b></div>
     ${pend.length?`<div class="kv"><span>Pendientes de autorizar</span><b>${pend.length}</b></div>`:''}</div>`;
@@ -796,6 +816,7 @@ const findMov=id=>S.movs.find(m=>m.id===id);
 const ACT={
   closeSheet,
   diaDesdeCierre:()=>{closeSheet();S.dia=today();S.tab='dia';window.scrollTo(0,0);render()},
+  verDia:d=>{S.dia=d.id;S.tab='dia';window.scrollTo(0,0);render()},
   diaHoy:()=>{S.dia=S.dia||today();S.tab='dia';window.scrollTo(0,0);render()},
   dPrev:()=>{S.dia=addDays(S.dia||today(),-1);render()},
   dNext:()=>{const n=addDays(S.dia||today(),1);if(n<=today())S.dia=n;render()},
